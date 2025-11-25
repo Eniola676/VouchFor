@@ -41,40 +41,59 @@ export default function ActivePrograms() {
 
       setCurrentUserId(user.id);
 
-      // Fetch affiliate programs with vendor details
-      const { data, error } = await supabase
+      // Fetch affiliate programs
+      const { data: affiliateProgramsData, error: affiliateError } = await supabase
         .from('affiliate_programs')
-        .select(`
-          id,
-          vendor_id,
-          status,
-          vendor:vendor_id (
-            id,
-            vendor_slug,
-            program_name,
-            commission_type,
-            commission_value,
-            destination_url
-          )
-        `)
+        .select('id, vendor_id, status, created_at')
         .eq('affiliate_id', user.id)
         .eq('status', 'active')
         .order('created_at', { ascending: false });
 
-      if (error) {
-        console.error('Error fetching programs:', error);
+      if (affiliateError) {
+        console.error('Error fetching affiliate programs:', affiliateError);
         setLoading(false);
         return;
       }
 
-      // Transform the data to match our interface
-      const transformedPrograms = (data || []).map((item: any) => ({
-        id: item.id,
-        vendor_id: item.vendor_id,
-        status: item.status,
-        vendor: item.vendor,
-      }));
+      if (!affiliateProgramsData || affiliateProgramsData.length === 0) {
+        console.log('No affiliate programs found for user:', user.id);
+        setPrograms([]);
+        setLoading(false);
+        return;
+      }
 
+      // Fetch vendor details for each program
+      const vendorIds = affiliateProgramsData.map(ap => ap.vendor_id);
+      const { data: vendorsData, error: vendorsError } = await supabase
+        .from('vendors')
+        .select('id, vendor_slug, program_name, commission_type, commission_value, destination_url')
+        .in('id', vendorIds)
+        .eq('is_active', true);
+
+      if (vendorsError) {
+        console.error('Error fetching vendors:', vendorsError);
+        setLoading(false);
+        return;
+      }
+
+      // Combine affiliate_programs with vendor data
+      const transformedPrograms = affiliateProgramsData
+        .map((ap: any) => {
+          const vendor = vendorsData?.find((v: any) => v.id === ap.vendor_id);
+          if (!vendor) {
+            console.warn('Vendor not found for vendor_id:', ap.vendor_id);
+            return null;
+          }
+          return {
+            id: ap.id,
+            vendor_id: ap.vendor_id,
+            status: ap.status,
+            vendor: vendor,
+          };
+        })
+        .filter((p: any) => p !== null);
+
+      console.log('Transformed programs:', transformedPrograms);
       setPrograms(transformedPrograms);
     } catch (err) {
       console.error('Error:', err);
