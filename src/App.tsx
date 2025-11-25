@@ -6,6 +6,8 @@ import Programs from './pages/Programs';
 import PartnerRecruitmentPage from './pages/p/[vendorSlug]';
 import AffiliateSignupPage from './pages/signup/affiliate';
 import ProgramPreview from './pages/ProgramPreview';
+import AffiliateDashboard from './pages/dashboard/affiliate';
+import CommissionsPage from './pages/dashboard/affiliate/commissions';
 
 function App() {
   return (
@@ -18,6 +20,8 @@ function App() {
             <Route path="/preview" element={<ProgramPreview />} />
             <Route path="/p/:vendorSlug" element={<PartnerRecruitmentPage />} />
             <Route path="/signup/affiliate" element={<AffiliateSignupPage />} />
+            <Route path="/dashboard/affiliate" element={<AffiliateDashboard />} />
+            <Route path="/dashboard/affiliate/commissions" element={<CommissionsPage />} />
           </Routes>
         </BrowserRouter>
       </OfferDataProvider>
