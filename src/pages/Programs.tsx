@@ -1,10 +1,13 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { VouchForSidebar } from '../components/VouchForSidebar';
+import { VendorSidebar } from '../components/VendorSidebar';
 import { GridBackground } from '../components/ui/grid-background';
+import CommissionCalculator from '../components/CommissionCalculator';
+import OfferSetupForm from '../components/OfferSetupForm';
 import { supabase } from '../lib/supabase';
 import { cn } from '../lib/utils';
-import { ExternalLink, Calendar, DollarSign, Users } from 'lucide-react';
+import { ExternalLink, Calendar, DollarSign, Users, Plus } from 'lucide-react';
+import Button from '../components/ui/Button';
 
 interface VendorProgram {
   id: string;
@@ -19,10 +22,24 @@ interface VendorProgram {
   published_at: string | null;
 }
 
+interface CalculationResults {
+  grossMargin: number;
+  grossMarginPercentage: number;
+  commissionMinPercentage: number;
+  commissionMaxPercentage: number;
+  commissionMinAmount: number;
+  commissionMaxAmount: number;
+  helperMessage: string;
+  error: string | null;
+}
+
 export default function Programs() {
   const [programs, setPrograms] = useState<VendorProgram[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [calculationResults, setCalculationResults] = useState<CalculationResults | null>(null);
+  const showForm = calculationResults && !calculationResults.error;
 
   useEffect(() => {
     fetchPrograms();
@@ -31,15 +48,43 @@ export default function Programs() {
   const fetchPrograms = async () => {
     try {
       setLoading(true);
+      setError(null);
+      
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      
+      if (userError) {
+        console.error('Error getting user:', userError);
+        setError('Authentication error. Please sign in again.');
+        setLoading(false);
+        return;
+      }
+      
+      if (!user) {
+        console.log('No user found');
+        setError('Please sign in to view your programs.');
+        setLoading(false);
+        return;
+      }
+
+      console.log('Fetching programs for user:', user.id);
+
       const { data, error: supabaseError } = await supabase
         .from('vendors')
         .select('*')
+        .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
       if (supabaseError) {
+        console.error('Supabase error details:', {
+          message: supabaseError.message,
+          code: supabaseError.code,
+          details: supabaseError.details,
+          hint: supabaseError.hint,
+        });
         throw supabaseError;
       }
 
+      console.log('Fetched programs:', data?.length || 0, 'programs');
       setPrograms(data || []);
     } catch (err) {
       console.error('Error fetching programs:', err);
@@ -59,20 +104,50 @@ export default function Programs() {
 
   return (
     <div className={cn(
-      "rounded-md flex flex-col md:flex-row bg-black w-full flex-1 min-h-screen",
-      "overflow-hidden relative"
+      "rounded-md flex flex-col md:flex-row w-full flex-1 min-h-screen",
+      "relative"
     )}>
       <GridBackground />
       <div className="relative z-10">
-        <VouchForSidebar />
+        <VendorSidebar />
       </div>
       
       <div className="flex flex-1 relative z-10">
-        <div className="p-2 md:p-10 rounded-tl-2xl border-l border-gray-800 bg-black flex flex-col gap-2 flex-1 w-full h-full">
-          <div className="mb-6">
-            <h1 className="text-2xl font-semibold text-white mb-2">Your Programs</h1>
-            <p className="text-sm text-gray-400">Manage all your referral programs</p>
+        <div className="p-2 md:p-10 rounded-tl-2xl border-l border-gray-800 bg-black flex flex-col gap-6 flex-1 w-full h-full overflow-y-auto">
+          <div className="flex items-center justify-between mb-2">
+            <div>
+              <h1 className="text-2xl font-semibold text-white mb-2">Your Programs</h1>
+              <p className="text-sm text-gray-400">Manage all your referral programs</p>
+            </div>
+            <Button
+              onClick={() => setShowCreateForm(!showCreateForm)}
+              variant="primary"
+              size="md"
+              className="flex items-center gap-2"
+            >
+              <Plus className="w-4 h-4" />
+              <span>{showCreateForm ? 'Cancel' : 'Create Program'}</span>
+            </Button>
           </div>
+
+          {/* Create Program Section */}
+          {showCreateForm && (
+            <div className="mb-6">
+              <div className={cn(
+                "grid gap-6",
+                showForm ? "grid-cols-1 lg:grid-cols-2" : "grid-cols-1"
+              )}>
+                <CommissionCalculator onCalculate={setCalculationResults} />
+                {showForm && (
+                  <OfferSetupForm onSave={() => {
+                    setShowCreateForm(false);
+                    setCalculationResults(null);
+                    fetchPrograms();
+                  }} />
+                )}
+              </div>
+            </div>
+          )}
 
           {loading && (
             <div className="flex items-center justify-center py-12">
@@ -152,7 +227,7 @@ export default function Programs() {
                       View Page
                     </Link>
                     <Link
-                      to={`/preview`}
+                      to={`/programs/${program.vendor_slug}/edit`}
                       className="flex-1 px-3 py-2 bg-gray-900/50 hover:bg-gray-800 border border-gray-700 rounded-md text-sm text-white text-center transition"
                     >
                       Edit
@@ -167,4 +242,5 @@ export default function Programs() {
     </div>
   );
 }
+
 

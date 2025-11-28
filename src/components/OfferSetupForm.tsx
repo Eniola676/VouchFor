@@ -32,6 +32,14 @@ export default function OfferSetupForm({ onSave }: OfferSetupFormProps) {
     setIsSaving(true);
 
     try {
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        setError('You must be logged in to create a program');
+        setIsSaving(false);
+        return;
+      }
+
       // Generate vendor slug from program name or use default
       const vendorSlug = offerData.programName 
         ? createSlug(offerData.programName)
@@ -40,6 +48,7 @@ export default function OfferSetupForm({ onSave }: OfferSetupFormProps) {
       // Prepare data for Supabase
       const vendorData = {
         vendor_slug: vendorSlug,
+        user_id: user.id,
         destination_url: offerData.destinationUrl,
         program_name: offerData.programName,
         commission_type: offerData.commissionType,
@@ -94,8 +103,8 @@ export default function OfferSetupForm({ onSave }: OfferSetupFormProps) {
 
       console.log('Vendor saved successfully:', data);
 
-      // Navigate to the recruitment page
-      navigate(`/p/${vendorSlug}`);
+      // Navigate to programs page
+      navigate('/programs');
       
       if (onSave) {
         onSave();
@@ -264,16 +273,15 @@ export default function OfferSetupForm({ onSave }: OfferSetupFormProps) {
             </label>
             <select
               id="payoutSchedule"
-              value={offerData.payoutSchedule}
+              value={offerData.payoutSchedule || 'upon_request'}
               onChange={(e) => updateOfferData({ payoutSchedule: e.target.value })}
               className="w-full px-4 py-2 bg-gray-900/50 border border-gray-700 text-white rounded-md focus:ring-2 focus:ring-primary-600 focus:border-primary-600 outline-none transition"
               required
             >
-              <option value="">Select payout schedule</option>
+              <option value="upon_request">Upon Request (Manual approval)</option>
               <option value="monthly_1st">Monthly (1st of the month for previous month's sales)</option>
               <option value="net_15">Net-15 (15 days after end of the month)</option>
               <option value="net_30">Net-30 (30 days after end of the month)</option>
-              <option value="upon_request">Upon Request (Manual approval)</option>
             </select>
             <p className="mt-1 text-xs text-gray-500">
               Define the exact timeline for processing commissions.

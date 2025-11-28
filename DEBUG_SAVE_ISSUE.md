@@ -66,3 +66,4 @@ CREATE POLICY "Anyone can insert vendors"
   WITH CHECK (true);
 ```
 
+

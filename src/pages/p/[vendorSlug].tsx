@@ -40,17 +40,15 @@ export default function PartnerRecruitmentPage(props?: PartnerRecruitmentPagePro
 
   // Format payout schedule
   const formatPayoutSchedule = () => {
-    if (!offerData || !offerData.payoutSchedule) {
-      return 'Monthly via Bank Transfer';
-    }
+    const payoutSchedule = offerData?.payoutSchedule || 'upon_request';
     const scheduleMap: Record<string, string> = {
       'monthly_1st': 'Monthly (1st of the month)',
       'net_15': 'Net-15 (15 days after month end)',
       'net_30': 'Net-30 (30 days after month end)',
       'upon_request': 'Upon Request (Manual approval)',
     };
-    const method = offerData.payoutMethod === 'bank_transfer' ? 'via Bank Transfer' : 'via Manual Arrangement';
-    return `${scheduleMap[offerData.payoutSchedule] || offerData.payoutSchedule} ${method}`;
+    const method = offerData?.payoutMethod === 'bank_transfer' ? 'via Bank Transfer' : 'via Manual Arrangement';
+    return `${scheduleMap[payoutSchedule] || payoutSchedule} ${method}`;
   };
 
   // Format cookie duration

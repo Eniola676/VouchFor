@@ -39,3 +39,4 @@ VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFz
 2. Stop the current server (Ctrl+C)
 3. Run `npm run dev` again
 
+

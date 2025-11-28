@@ -60,3 +60,4 @@ npm run dev
 
 **Need help finding the keys?** The Project URL and anon key are in **Settings → API** in your Supabase dashboard.
 
+

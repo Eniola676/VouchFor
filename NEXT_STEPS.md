@@ -91,3 +91,4 @@ Environment variables are loaded when Vite starts, so you need to restart:
 - Refresh the Table Editor
 - Check RLS policies allow public reads (they should, based on our schema)
 
+

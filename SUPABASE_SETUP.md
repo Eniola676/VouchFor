@@ -66,3 +66,4 @@ This will create:
 - **"Failed to save"**: Check browser console for errors. Make sure RLS policies are set up correctly.
 - **Can't see data**: Check that you're looking at the right project in Supabase dashboard.
 
+

@@ -27,7 +27,7 @@ const defaultOfferData: OfferSetupFormData = {
   commissionValue: '',
   cookieDuration: '60',
   coolingOffPeriod: '30',
-  payoutSchedule: '',
+  payoutSchedule: 'upon_request',
   payoutMethod: 'bank_transfer',
   minimumPayoutThreshold: '10000',
   transactionFees: 'vendor',

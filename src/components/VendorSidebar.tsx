@@ -3,7 +3,7 @@ import { Sidebar, SidebarBody, SidebarLink } from "@/components/ui/sidebar";
 import { LayoutDashboard, Users, Settings, Cog, FolderKanban } from "lucide-react";
 import { motion } from "framer-motion";
 
-export function VouchForSidebar() {
+export function VendorSidebar() {
   const links = [
     {
       label: "Overview",
@@ -35,7 +35,7 @@ export function VouchForSidebar() {
     },
     {
       label: "Settings",
-      href: "#",
+      href: "/settings/integrations",
       icon: (
         <Settings className="text-white h-5 w-5 flex-shrink-0" />
       ),
