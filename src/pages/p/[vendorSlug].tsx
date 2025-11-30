@@ -1,7 +1,9 @@
+import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Check } from 'lucide-react';
 import { OfferSetupFormData, useOfferData } from '../../contexts/OfferDataContext';
 import { GridBackground } from '../../components/ui/grid-background';
+import { supabase } from '../../lib/supabase';
 
 interface PartnerRecruitmentPageProps {
   offerData?: OfferSetupFormData;
@@ -11,18 +13,92 @@ interface PartnerRecruitmentPageProps {
   };
 }
 
+interface VendorProgramData {
+  program_name: string;
+  commission_type: 'percentage' | 'fixed';
+  commission_value: string;
+  cookie_duration: number;
+  payout_schedule: string;
+  payout_method: string;
+  service_price: string | null;
+  destination_url: string;
+  is_active: boolean;
+}
+
 export default function PartnerRecruitmentPage(props?: PartnerRecruitmentPageProps) {
   const { offerData: propOfferData, vendorData: propVendorData } = props || {};
   const { vendorSlug } = useParams<{ vendorSlug: string }>();
+  const [vendorProgram, setVendorProgram] = useState<VendorProgramData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   
-  // Get offerData from context (will work since we're wrapped in OfferDataProvider)
-  // Use prop offerData first if provided (for preview mode), otherwise use context
+  // Get offerData from context (for preview mode)
   const contextData = useOfferData();
-  const offerData = propOfferData || contextData.offerData;
   
-  // Use provided vendor data or derive from offerData or fallback to defaults
+  // Fetch vendor program data from Supabase when vendorSlug is available
+  useEffect(() => {
+    const fetchVendorProgram = async () => {
+      // If props are provided (preview mode), skip fetching
+      if (propOfferData || propVendorData) {
+        setLoading(false);
+        return;
+      }
+      
+      // If no vendorSlug, skip fetching
+      if (!vendorSlug) {
+        setLoading(false);
+        return;
+      }
+      
+      try {
+        setLoading(true);
+        const { data, error: fetchError } = await supabase
+          .from('vendors')
+          .select('program_name, commission_type, commission_value, cookie_duration, payout_schedule, payout_method, service_price, destination_url, is_active')
+          .eq('vendor_slug', vendorSlug)
+          .eq('is_active', true)
+          .single();
+        
+        if (fetchError) {
+          console.error('Error fetching vendor program:', fetchError);
+          setError('Program not found or inactive');
+          setLoading(false);
+          return;
+        }
+        
+        if (data) {
+          setVendorProgram(data as VendorProgramData);
+        }
+      } catch (err) {
+        console.error('Error:', err);
+        setError('Failed to load program');
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchVendorProgram();
+  }, [vendorSlug, propOfferData, propVendorData]);
+  
+  // Determine which data source to use
+  // Priority: 1. Props (preview), 2. Fetched from DB, 3. Context, 4. Defaults
+  const offerData: OfferSetupFormData | null = propOfferData || (vendorProgram ? {
+    programName: vendorProgram.program_name,
+    commissionType: vendorProgram.commission_type,
+    commissionValue: vendorProgram.commission_value,
+    cookieDuration: vendorProgram.cookie_duration.toString(),
+    payoutSchedule: vendorProgram.payout_schedule,
+    payoutMethod: (vendorProgram.payout_method === 'bank_transfer' ? 'bank_transfer' : 'other') as 'bank_transfer' | 'other',
+    servicePrice: vendorProgram.service_price || '',
+    destinationUrl: vendorProgram.destination_url,
+    coolingOffPeriod: '0',
+    minimumPayoutThreshold: '0',
+    transactionFees: 'vendor' as 'vendor' | 'affiliate',
+  } : null) || contextData.offerData;
+  
+  // Use provided vendor data or derive from fetched/context data
   const vendorData = propVendorData || {
-    companyName: offerData?.programName || 'Lumon Digital Agency',
+    companyName: offerData?.programName || vendorProgram?.program_name || 'Lumon Digital Agency',
     logo: null,
   };
 
@@ -88,6 +164,39 @@ export default function PartnerRecruitmentPage(props?: PartnerRecruitmentPagePro
     : 'Become a Growth Partner for Acme Digital Agency';
   
   const subheadline = 'Earn high-ticket commissions by referring clients to our premium services.';
+
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-black text-white relative">
+        <GridBackground />
+        <div className="relative z-10 flex items-center justify-center min-h-screen">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
+            <p className="text-gray-400">Loading program...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state
+  if (error && !propOfferData) {
+    return (
+      <div className="min-h-screen bg-black text-white relative">
+        <GridBackground />
+        <div className="relative z-10 flex items-center justify-center min-h-screen">
+          <div className="text-center">
+            <h1 className="text-2xl font-semibold text-white mb-2">Program Not Found</h1>
+            <p className="text-gray-400 mb-4">{error}</p>
+            <Link to="/" className="text-primary-400 hover:text-primary-300">
+              Go to Home
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-black text-white relative">

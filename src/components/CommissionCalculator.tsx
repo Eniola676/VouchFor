@@ -194,9 +194,17 @@ function CommissionCalculator({ onCalculate }: CommissionCalculatorProps) {
                   Recommended Commission Percentage Range
                 </h3>
                 <div className="flex items-baseline gap-2 mb-2">
-                  <span className="text-xl font-semibold text-white">{results.commissionMinPercentage}%</span>
+                  <span className="text-xl font-semibold text-white">
+                    {results.commissionMinPercentage % 1 === 0 
+                      ? results.commissionMinPercentage 
+                      : results.commissionMinPercentage.toFixed(1)}%
+                  </span>
                   <span className="text-gray-500">to</span>
-                  <span className="text-xl font-semibold text-white">{results.commissionMaxPercentage}%</span>
+                  <span className="text-xl font-semibold text-white">
+                    {results.commissionMaxPercentage % 1 === 0 
+                      ? results.commissionMaxPercentage 
+                      : results.commissionMaxPercentage.toFixed(1)}%
+                  </span>
                 </div>
                 <p className="text-xs text-gray-400 mt-2 italic">{results.helperMessage}</p>
               </div>

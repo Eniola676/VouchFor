@@ -94,7 +94,7 @@ export default function CommissionsPage() {
 
   return (
     <div className={cn(
-      "rounded-md flex flex-col md:flex-row w-full flex-1 min-h-screen",
+      "rounded-md flex flex-col md:flex-row w-full flex-1 min-h-screen bg-black",
       "relative"
     )}>
       <GridBackground />
@@ -103,7 +103,7 @@ export default function CommissionsPage() {
       </div>
       
       <div className="flex flex-1 relative z-10">
-        <div className="p-2 md:p-10 rounded-tl-2xl border-l border-gray-800 bg-black flex flex-col gap-6 flex-1 w-full h-full overflow-y-auto">
+        <div className="p-2 md:p-10 rounded-tl-2xl border-l border-gray-800 bg-black/95 backdrop-blur-xl flex flex-col gap-6 flex-1 w-full h-full overflow-y-auto">
           <div className="mb-4">
             <h1 className="text-2xl font-semibold text-white mb-2">Commissions & withdrawals</h1>
             <p className="text-sm text-gray-400">View your commission history and manage withdrawals</p>

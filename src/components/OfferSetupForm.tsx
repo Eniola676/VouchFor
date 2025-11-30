@@ -57,6 +57,7 @@ export default function OfferSetupForm({ onSave }: OfferSetupFormProps) {
         cooling_off_period: parseInt(offerData.coolingOffPeriod, 10),
         payout_schedule: offerData.payoutSchedule,
         payout_method: offerData.payoutMethod,
+        manual_arrangement_details: offerData.payoutMethod === 'other' ? offerData.manualArrangementDetails || null : null,
         minimum_payout_threshold: offerData.minimumPayoutThreshold,
         transaction_fees: offerData.transactionFees,
         service_price: offerData.servicePrice || null,
@@ -318,6 +319,27 @@ export default function OfferSetupForm({ onSave }: OfferSetupFormProps) {
                 <span className="ml-2 text-sm text-gray-300">Other (Manual Arrangement)</span>
               </label>
             </div>
+            
+            {/* Manual Arrangement Details - Show when "other" is selected */}
+            {offerData.payoutMethod === 'other' && (
+              <div className="mt-4">
+                <label htmlFor="manualArrangementDetails" className="block text-sm font-medium text-gray-300 mb-2">
+                  Please explain your manual arrangement plan in detail
+                </label>
+                <textarea
+                  id="manualArrangementDetails"
+                  value={offerData.manualArrangementDetails || ''}
+                  onChange={(e) => updateOfferData({ manualArrangementDetails: e.target.value })}
+                  placeholder="Describe how you plan to handle payouts (e.g., PayPal, wire transfer, check, etc.)"
+                  rows={4}
+                  className="w-full px-4 py-2 bg-gray-900/50 border border-gray-700 text-white placeholder-gray-500 rounded-md focus:ring-2 focus:ring-primary-600 focus:border-primary-600 outline-none transition resize-none"
+                  required={offerData.payoutMethod === 'other'}
+                />
+                <p className="mt-1 text-xs text-gray-500">
+                  Provide clear details about your payout process so affiliates know what to expect.
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Minimum Payout Threshold */}

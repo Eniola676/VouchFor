@@ -29,7 +29,7 @@ export default function ProgramPreview() {
         </div>
 
         {/* Right Side - Preview */}
-        <div className="lg:w-1/2 overflow-y-auto bg-black">
+        <div className="lg:w-1/2 overflow-y-auto bg-black/95 backdrop-blur-xl">
           <div className="sticky top-0 bg-black/80 backdrop-blur-sm border-b border-gray-800 p-4 z-10">
             <h2 className="text-lg font-semibold text-white">Live Preview</h2>
             <p className="text-xs text-gray-400">See how your program will look to partners</p>

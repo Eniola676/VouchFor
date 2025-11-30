@@ -92,3 +92,4 @@ Environment variables are loaded when Vite starts, so you need to restart:
 - Check RLS policies allow public reads (they should, based on our schema)
 
 
+

@@ -115,3 +115,4 @@ WHERE ap.affiliate_id = 'your-user-id-here';
 5. Check if vendors table has proper RLS policies for affiliates to read
 
 
+

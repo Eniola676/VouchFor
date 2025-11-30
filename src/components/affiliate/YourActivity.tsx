@@ -1,4 +1,4 @@
-import { Activity, Clock } from 'lucide-react';
+import { Activity, Clock, Target, DollarSign, FileText } from 'lucide-react';
 
 // Mock activity data - will be replaced with real data from Supabase
 const mockActivities = [
@@ -37,11 +37,11 @@ export default function YourActivity() {
   const getActivityIcon = (type: string) => {
     switch (type) {
       case 'new_lead':
-        return '🎯';
+        return <Target className="w-5 h-5 text-primary-400 flex-shrink-0" />;
       case 'payout':
-        return '💰';
+        return <DollarSign className="w-5 h-5 text-primary-400 flex-shrink-0" />;
       default:
-        return '📋';
+        return <FileText className="w-5 h-5 text-primary-400 flex-shrink-0" />;
     }
   };
 
@@ -64,7 +64,9 @@ export default function YourActivity() {
                 key={activity.id}
                 className="flex items-start gap-4 pb-4 border-b border-gray-800 last:border-0 last:pb-0"
               >
-                <div className="text-2xl">{getActivityIcon(activity.type)}</div>
+                <div className="w-8 h-8 rounded-lg bg-primary-600/20 flex items-center justify-center flex-shrink-0">
+                  {getActivityIcon(activity.type)}
+                </div>
                 <div className="flex-1">
                   <p className="text-white text-sm mb-1">{activity.message}</p>
                   <div className="flex items-center gap-2 text-xs text-gray-500">
@@ -80,5 +82,6 @@ export default function YourActivity() {
     </div>
   );
 }
+
 
 

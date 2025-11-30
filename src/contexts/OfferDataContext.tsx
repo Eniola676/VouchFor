@@ -9,6 +9,7 @@ export interface OfferSetupFormData {
   coolingOffPeriod: string;
   payoutSchedule: string;
   payoutMethod: 'bank_transfer' | 'other';
+  manualArrangementDetails?: string; // Details when payoutMethod is 'other'
   minimumPayoutThreshold: string;
   transactionFees: 'vendor' | 'affiliate';
   servicePrice?: string; // Service price from calculator

@@ -64,9 +64,43 @@ export default function OAuthCallback() {
           }
         }
 
-        // Redirect based on role
+        // If affiliate and vendor slug is present, join the program
         if (role === 'affiliate') {
           const vendorSlug = searchParams.get('vendor');
+          
+          if (vendorSlug) {
+            try {
+              // Look up the vendor by slug
+              const { data: vendorData, error: vendorError } = await supabase
+                .from('vendors')
+                .select('id')
+                .eq('vendor_slug', vendorSlug)
+                .eq('is_active', true)
+                .single();
+
+              if (!vendorError && vendorData) {
+                // Use database function to join program (bypasses RLS)
+                const { data: joinData, error: joinError } = await supabase
+                  .rpc('join_program', {
+                    p_affiliate_id: session.user.id,
+                    p_vendor_id: vendorData.id,
+                  });
+
+                if (joinError) {
+                  console.warn('Failed to join program:', joinError);
+                  // Don't fail redirect if program join fails
+                } else {
+                  console.log('Successfully joined program:', vendorSlug, joinData);
+                }
+              } else {
+                console.warn('Vendor not found or inactive:', vendorSlug);
+              }
+            } catch (err) {
+              console.warn('Error joining program:', err);
+              // Don't fail redirect if program join fails
+            }
+          }
+          
           navigate(vendorSlug ? `/dashboard/affiliate?vendor=${vendorSlug}` : '/dashboard/affiliate');
         } else {
           navigate('/');
@@ -110,4 +144,5 @@ export default function OAuthCallback() {
     </div>
   );
 }
+
 

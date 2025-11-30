@@ -32,6 +32,26 @@ export default function Button({
     lg: 'px-8 py-4 text-lg rounded-md',
   };
 
+  // return (
+  //   <button
+  //     className={cn(
+  //       baseStyles,
+  //       variants[variant],
+  //       sizes[size],
+  //       number && 'pr-12',
+  //       fullWidth && 'w-full',
+  //       className
+  //     )}
+  //     {...props}
+  //   >
+  //     <span className="relative z-10">{children}</span>
+  //     {number !== undefined && (
+  //       <span className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center justify-center w-6 h-6 text-xs font-semibold bg-black/20 text-white rounded-full border border-white/10 backdrop-blur-sm">
+  //         {number}
+  //       </span>
+  //     )}
+  //   </button>
+  // );
   return (
     <button
       className={cn(
@@ -44,7 +64,7 @@ export default function Button({
       )}
       {...props}
     >
-      <span className="relative z-10">{children}</span>
+      <span className="relative z-10 inline-flex items-center gap-2">{children}</span>
       {number !== undefined && (
         <span className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center justify-center w-6 h-6 text-xs font-semibold bg-black/20 text-white rounded-full border border-white/10 backdrop-blur-sm">
           {number}

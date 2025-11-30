@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { VendorSidebar } from '@/components/VendorSidebar';
+import DashboardHeader from '@/components/DashboardHeader';
 import { GridBackground } from '@/components/ui/grid-background';
 import { supabase } from '@/lib/supabase';
 import { cn } from '@/lib/utils';
@@ -111,18 +112,27 @@ document.getElementById('signup-form').addEventListener('submit', function(e) {
 });`;
 
   return (
-    <div className={cn("rounded-md flex flex-col md:flex-row w-full flex-1 min-h-screen", "relative")}>
+    <div className={cn("flex flex-col w-full min-h-screen bg-black", "relative")}>
       <GridBackground />
-      <div className="relative z-10">
-        <VendorSidebar />
+      
+      {/* Top Header Bar */}
+      <div className="relative z-20">
+        <DashboardHeader />
       </div>
       
       <div className="flex flex-1 relative z-10">
-        <div className="p-2 md:p-10 rounded-tl-2xl border-l border-gray-800 bg-black flex flex-col gap-6 flex-1 w-full h-full overflow-y-auto">
-          <div className="mb-4">
-            <h1 className="text-2xl font-semibold text-white mb-2">Integrations</h1>
-            <p className="text-sm text-gray-400">Add the VouchFor tracker to your website to track affiliate signups</p>
-          </div>
+        {/* Sidebar */}
+        <div className="relative z-10">
+          <VendorSidebar />
+        </div>
+        
+        {/* Main Content */}
+        <div className="flex flex-1 relative z-10">
+          <div className="p-2 md:p-10 rounded-tl-2xl border-l border-gray-800 bg-black/95 backdrop-blur-xl flex flex-col gap-6 flex-1 w-full h-full overflow-y-auto">
+            <div className="mb-4">
+              <h1 className="text-2xl font-semibold text-white mb-2">Integrations</h1>
+              <p className="text-sm text-gray-400">Add the VouchFor tracker to your website to track affiliate signups</p>
+            </div>
 
           {/* Program Selector */}
           <div className="bg-black/80 backdrop-blur-xl border border-gray-800 rounded-lg p-6">
@@ -276,6 +286,7 @@ document.getElementById('signup-form').addEventListener('submit', function(e) {
               </div>
             </>
           )}
+          </div>
         </div>
       </div>
     </div>

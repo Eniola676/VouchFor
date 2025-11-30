@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Sidebar, SidebarBody, SidebarLink } from "@/components/ui/sidebar";
-import { LayoutDashboard, Users, Settings, Cog, FolderKanban } from "lucide-react";
+import { LayoutDashboard, Users, Settings, FolderKanban, HelpCircle, MessageSquare } from "lucide-react";
 import { motion } from "framer-motion";
 
 export function VendorSidebar() {
@@ -10,13 +10,6 @@ export function VendorSidebar() {
       href: "/",
       icon: (
         <LayoutDashboard className="text-white h-5 w-5 flex-shrink-0" />
-      ),
-    },
-    {
-      label: "Program Setup",
-      href: "/",
-      icon: (
-        <Cog className="text-white h-5 w-5 flex-shrink-0" />
       ),
     },
     {
@@ -33,11 +26,28 @@ export function VendorSidebar() {
         <Users className="text-white h-5 w-5 flex-shrink-0" />
       ),
     },
+  ];
+
+  const bottomLinks = [
     {
       label: "Settings",
-      href: "/settings/integrations",
+      href: "/settings",
       icon: (
-        <Settings className="text-white h-5 w-5 flex-shrink-0" />
+        <Settings className="text-gray-400 h-5 w-5 flex-shrink-0" />
+      ),
+    },
+    {
+      label: "Customer Support",
+      href: "/support",
+      icon: (
+        <HelpCircle className="text-gray-400 h-5 w-5 flex-shrink-0" />
+      ),
+    },
+    {
+      label: "Feature Requests & Feedback",
+      href: "/feedback",
+      icon: (
+        <MessageSquare className="text-gray-400 h-5 w-5 flex-shrink-0" />
       ),
     },
   ];
@@ -55,18 +65,18 @@ export function VendorSidebar() {
             ))}
           </div>
         </div>
-        <div>
-          <SidebarLink
-            link={{
-              label: "VouchFor",
-              href: "#",
-              icon: (
-                <div className="h-7 w-7 flex-shrink-0 rounded-full bg-primary-700 flex items-center justify-center text-white text-xs font-bold">
-                  VF
-                </div>
-              ),
-            }}
-          />
+        
+        {/* Bottom Section - Separated from main navigation */}
+        <div className="border-t border-gray-800 pt-4 mt-auto">
+          <div className="flex flex-col gap-2">
+            {bottomLinks.map((link, idx) => (
+              <SidebarLink 
+                key={idx} 
+                link={link}
+                className="text-gray-400 hover:text-white hover:bg-gray-900/30 rounded-md transition-colors"
+              />
+            ))}
+          </div>
         </div>
       </SidebarBody>
     </Sidebar>

@@ -196,3 +196,4 @@ document.getElementById('signup-form').addEventListener('submit', function(e) {
 - Never expose the service_role key in client-side code
 - The tracker validates referral IDs before sending events
 
+

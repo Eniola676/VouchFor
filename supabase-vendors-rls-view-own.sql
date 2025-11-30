@@ -15,3 +15,4 @@ CREATE POLICY "Vendors can view their own vendors"
 -- 1. View all active vendors (public policy)
 -- 2. View their own vendors regardless of active status (this policy)
 
+

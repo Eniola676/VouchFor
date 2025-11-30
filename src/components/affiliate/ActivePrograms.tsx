@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
-import { Copy, Check, ExternalLink } from 'lucide-react';
+import { Copy, Check, ExternalLink, LogOut, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface Program {
@@ -25,9 +25,28 @@ export default function ActivePrograms() {
   const [loading, setLoading] = useState(true);
   const [copiedLinkId, setCopiedLinkId] = useState<string | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [leavingProgramId, setLeavingProgramId] = useState<string | null>(null);
+  const [showConfirmLeave, setShowConfirmLeave] = useState<string | null>(null);
 
   useEffect(() => {
     fetchUserAndPrograms();
+    
+    // Refetch when window gains focus (e.g., after returning from signup)
+    const handleFocus = () => {
+      fetchUserAndPrograms();
+    };
+    
+    window.addEventListener('focus', handleFocus);
+    
+    // Also refetch after a short delay to catch any async signup completion
+    const timeoutId = setTimeout(() => {
+      fetchUserAndPrograms();
+    }, 2000);
+    
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+      clearTimeout(timeoutId);
+    };
   }, []);
 
   const fetchUserAndPrograms = async () => {
@@ -51,19 +70,35 @@ export default function ActivePrograms() {
 
       if (affiliateError) {
         console.error('Error fetching affiliate programs:', affiliateError);
+        console.error('Error details:', {
+          message: affiliateError.message,
+          code: affiliateError.code,
+          details: affiliateError.details,
+          hint: affiliateError.hint,
+        });
         setLoading(false);
         return;
       }
 
       if (!affiliateProgramsData || affiliateProgramsData.length === 0) {
         console.log('No affiliate programs found for user:', user.id);
+        console.log('User ID:', user.id);
         setPrograms([]);
         setLoading(false);
         return;
       }
 
+      console.log('Found affiliate programs:', affiliateProgramsData.length, affiliateProgramsData);
+
       // Fetch vendor details for each program
-      const vendorIds = affiliateProgramsData.map(ap => ap.vendor_id);
+      interface AffiliateProgramRow {
+        id: string;
+        vendor_id: string;
+        status: string;
+        created_at: string;
+      }
+      
+      const vendorIds = affiliateProgramsData.map((ap: AffiliateProgramRow) => ap.vendor_id);
       const { data: vendorsData, error: vendorsError } = await supabase
         .from('vendors')
         .select('id, vendor_slug, program_name, commission_type, commission_value, destination_url')
@@ -77,9 +112,18 @@ export default function ActivePrograms() {
       }
 
       // Combine affiliate_programs with vendor data
-      const transformedPrograms = affiliateProgramsData
-        .map((ap: any) => {
-          const vendor = vendorsData?.find((v: any) => v.id === ap.vendor_id);
+      interface VendorRow {
+        id: string;
+        vendor_slug: string;
+        program_name: string;
+        commission_type: 'percentage' | 'fixed';
+        commission_value: string;
+        destination_url: string;
+      }
+      
+      const transformedPrograms: AffiliateProgram[] = affiliateProgramsData
+        .map((ap: AffiliateProgramRow) => {
+          const vendor = vendorsData?.find((v: VendorRow) => v.id === ap.vendor_id);
           if (!vendor) {
             console.warn('Vendor not found for vendor_id:', ap.vendor_id);
             return null;
@@ -88,10 +132,10 @@ export default function ActivePrograms() {
             id: ap.id,
             vendor_id: ap.vendor_id,
             status: ap.status,
-            vendor: vendor,
+            vendor: vendor as Program,
           };
         })
-        .filter((p: any) => p !== null);
+        .filter((p: AffiliateProgram | null): p is AffiliateProgram => p !== null);
 
       console.log('Transformed programs:', transformedPrograms);
       setPrograms(transformedPrograms);
@@ -122,6 +166,34 @@ export default function ActivePrograms() {
       return `${program.commission_value}%`;
     } else {
       return `$${parseFloat(program.commission_value).toLocaleString()}`;
+    }
+  };
+
+  const handleLeaveProgram = async (affiliateProgramId: string, programName: string) => {
+    try {
+      setLeavingProgramId(affiliateProgramId);
+      
+      const { error } = await supabase
+        .from('affiliate_programs')
+        .delete()
+        .eq('id', affiliateProgramId);
+
+      if (error) {
+        console.error('Error leaving program:', error);
+        alert('Failed to leave program. Please try again.');
+        setLeavingProgramId(null);
+        return;
+      }
+
+      // Remove from local state
+      setPrograms(programs.filter(p => p.id !== affiliateProgramId));
+      setShowConfirmLeave(null);
+      alert(`You have successfully left the ${programName} program.`);
+    } catch (err) {
+      console.error('Error:', err);
+      alert('Failed to leave program. Please try again.');
+    } finally {
+      setLeavingProgramId(null);
     }
   };
 
@@ -189,7 +261,7 @@ export default function ActivePrograms() {
               {/* Tracking Link */}
               <div className="mt-4 pt-4 border-t border-gray-800">
                 <label className="block text-xs font-medium text-gray-400 mb-2">
-                  Your Tracking Link
+                  Your Unique Link
                 </label>
                 <div className="flex gap-2">
                   <input
@@ -216,8 +288,50 @@ export default function ActivePrograms() {
                   </button>
                 </div>
                 <p className="text-xs text-gray-500 mt-2">
-                  Share this link to track referrals and earn commissions
+                  Share this link to earn commissions on referrals
                 </p>
+              </div>
+
+              {/* Leave Program Button */}
+              <div className="mt-4 pt-4 border-t border-gray-800">
+                {showConfirmLeave === affiliateProgram.id ? (
+                  <div className="bg-red-900/20 border border-red-800 rounded-lg p-4">
+                    <div className="flex items-start gap-3 mb-4">
+                      <AlertTriangle className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
+                      <div className="flex-1">
+                        <h4 className="text-sm font-semibold text-white mb-1">Leave Program?</h4>
+                        <p className="text-xs text-gray-400">
+                          Are you sure you want to leave this program? You'll stop earning commissions and your tracking link will no longer work.
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => handleLeaveProgram(affiliateProgram.id, program.program_name)}
+                        disabled={leavingProgramId === affiliateProgram.id}
+                        className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm rounded-md transition disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {leavingProgramId === affiliateProgram.id ? 'Leaving...' : 'Yes, Leave Program'}
+                      </button>
+                      <button
+                        onClick={() => setShowConfirmLeave(null)}
+                        disabled={leavingProgramId === affiliateProgram.id}
+                        className="flex-1 px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white text-sm rounded-md transition disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setShowConfirmLeave(affiliateProgram.id)}
+                    disabled={leavingProgramId === affiliateProgram.id}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-gray-900/50 hover:bg-gray-800 border border-gray-700 text-gray-300 hover:text-white text-sm rounded-md transition disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    Leave Program
+                  </button>
+                )}
               </div>
             </div>
           );

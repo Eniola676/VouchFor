@@ -119,7 +119,7 @@ export default function ProgramEditPage() {
 
   if (loading) {
     return (
-      <div className={cn("rounded-md flex flex-col md:flex-row w-full flex-1 min-h-screen", "relative")}>
+      <div className={cn("rounded-md flex flex-col md:flex-row w-full flex-1 min-h-screen bg-black", "relative")}>
         <GridBackground />
         <div className="relative z-10">
           <VendorSidebar />
@@ -133,7 +133,7 @@ export default function ProgramEditPage() {
 
   if (!program || error) {
     return (
-      <div className={cn("rounded-md flex flex-col md:flex-row w-full flex-1 min-h-screen", "relative")}>
+      <div className={cn("rounded-md flex flex-col md:flex-row w-full flex-1 min-h-screen bg-black", "relative")}>
         <GridBackground />
         <div className="relative z-10">
           <VendorSidebar />
@@ -151,14 +151,14 @@ export default function ProgramEditPage() {
   }
 
   return (
-    <div className={cn("rounded-md flex flex-col md:flex-row w-full flex-1 min-h-screen", "relative")}>
+    <div className={cn("rounded-md flex flex-col md:flex-row w-full flex-1 min-h-screen bg-black", "relative")}>
       <GridBackground />
       <div className="relative z-10">
         <VendorSidebar />
       </div>
       
       <div className="flex flex-1 relative z-10">
-        <div className="p-2 md:p-10 rounded-tl-2xl border-l border-gray-800 bg-black flex flex-col gap-6 flex-1 w-full h-full overflow-y-auto">
+        <div className="p-2 md:p-10 rounded-tl-2xl border-l border-gray-800 bg-black/95 backdrop-blur-xl flex flex-col gap-6 flex-1 w-full h-full overflow-y-auto">
           {/* Header */}
           <div className="mb-4">
             <Link
