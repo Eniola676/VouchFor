@@ -17,7 +17,7 @@ const mockActivities = [
   {
     id: '3',
     type: 'new_lead',
-    message: 'New click tracked for Marketing Pro program',
+    message: 'New signup from Marketing Pro program',
     created_at: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(), // 3 days ago
   },
 ];

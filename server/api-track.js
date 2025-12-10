@@ -1,22 +1,22 @@
 /**
- * API Endpoint: /api/track/event
+ * API Endpoint: /api/track
  * 
- * This endpoint handles tracking events from the VouchFor tracker.js SDK
- * It records signups and other events in the referrals table
+ * Hybrid Click and Sale Tracking API for VouchFor
+ * Handles both click and sale events from tracker.js
  * 
- * To use with Express:
- * import { handleTrackEvent } from './server/api-track.js';
- * app.post('/api/track/event', handleTrackEvent);
- * 
- * Or use with Vite proxy or Supabase Edge Functions
+ * Request Body:
+ * {
+ *   "event": "click" | "sale",
+ *   "ref_id": "affiliate-uuid",
+ *   "program_id": "vendor-uuid" (optional for clicks, required for sales)
+ * }
  */
 
 import { createClient } from '@supabase/supabase-js';
 
-// Initialize Supabase client
-// In production, use environment variables
-const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY; // Use service role key for server-side
+// Initialize Supabase client with service role key
+const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 if (!supabaseUrl || !supabaseServiceKey) {
   console.error('Missing Supabase credentials. Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY environment variables.');
@@ -32,129 +32,113 @@ const supabase = supabaseUrl && supabaseServiceKey
   : null;
 
 /**
- * Extract affiliate_id and vendor_id from referral_id
- * Format: referral_id is the affiliate_id, we need to find the vendor_id from the click
- */
-async function findVendorFromReferral(referralId) {
-  try {
-    // First, find the most recent click for this affiliate
-    // The referral_id in the tracker is actually the affiliate_id
-    const { data: recentClick, error } = await supabase
-      .from('referrals')
-      .select('vendor_id')
-      .eq('affiliate_id', referralId)
-      .eq('status', 'click')
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .single();
-
-    if (error || !recentClick) {
-      console.error('Error finding vendor from referral:', error);
-      return null;
-    }
-
-    return recentClick.vendor_id;
-  } catch (err) {
-    console.error('Exception finding vendor:', err);
-    return null;
-  }
-}
-
-/**
- * Handle tracking event
+ * Handle tracking event (click or sale)
  */
 export async function handleTrackEvent(req, res) {
   try {
-    const { referral_id, event_name, metadata } = req.body;
+    // Support both 'event' and 'event_type' for backward compatibility
+    const event = req.body.event || req.body.event_type;
+    const { ref_id, program_id } = req.body;
 
-    if (!referral_id) {
-      return res.status(400).json({ error: 'referral_id is required' });
+    // Validate required fields
+    if (!ref_id) {
+      return res.status(400).json({ error: 'ref_id is required' });
     }
 
-    if (!event_name) {
-      return res.status(400).json({ error: 'event_name is required' });
+    if (!event) {
+      return res.status(400).json({ error: 'event is required (must be "click" or "sale")' });
     }
 
-    // For signup events, we need to update the referrals table
-    if (event_name === 'signup') {
-      // Find the vendor_id from the most recent click
-      const vendorId = await findVendorFromReferral(referral_id);
+    if (event !== 'click' && event !== 'sale') {
+      return res.status(400).json({ error: 'event must be "click" or "sale"' });
+    }
 
-      if (!vendorId) {
-        console.warn('No vendor found for referral_id:', referral_id);
-        return res.status(200).json({ 
-          success: true, 
-          message: 'Event received but no active referral found',
-          warning: 'No recent click found for this affiliate'
-        });
-      }
+    // For sale events, program_id is required
+    if (event === 'sale' && !program_id) {
+      return res.status(400).json({ error: 'program_id is required for sale events' });
+    }
 
-      // Check if a signup already exists for this affiliate+vendor combination
-      const { data: existingSignup } = await supabase
-        .from('referrals')
-        .select('id')
-        .eq('affiliate_id', referral_id)
-        .eq('vendor_id', vendorId)
-        .eq('status', 'signup')
-        .limit(1)
-        .single();
+    // For click events, program_id is optional but recommended
+    // If not provided, we'll try to find it from the affiliate's active programs
+    let vendorId = program_id;
 
-      if (existingSignup) {
-        return res.status(200).json({ 
-          success: true, 
-          message: 'Signup already recorded',
-          referral_id: existingSignup.id
-        });
-      }
-
-      // Get vendor commission details to calculate commission amount
-      const { data: vendor } = await supabase
+    // Validate vendor/program if program_id is provided
+    if (vendorId) {
+      const { data: vendorData, error: vendorError } = await supabase
         .from('vendors')
-        .select('commission_type, commission_value')
+        .select('id, commission_type, commission_value, is_active')
         .eq('id', vendorId)
         .single();
 
-      let commissionAmount = 0;
-      if (vendor) {
-        // For signups, commission is typically 0 until conversion
-        // But you can set it based on your business logic
-        // For now, we'll set it to 0 and update it when conversion happens
-        commissionAmount = 0;
-      }
-
-      // Insert signup record
-      const { data: signupRecord, error: insertError } = await supabase
-        .from('referrals')
-        .insert({
-          affiliate_id: referral_id,
-          vendor_id: vendorId,
-          status: 'signup',
-          commission_amount: commissionAmount,
-        })
-        .select()
-        .single();
-
-      if (insertError) {
-        console.error('Error inserting signup:', insertError);
-        return res.status(500).json({ 
-          error: 'Failed to record signup',
-          details: insertError.message 
+      if (vendorError || !vendorData) {
+        return res.status(404).json({ 
+          error: 'Program not found',
+          details: vendorError?.message 
         });
       }
 
-      return res.status(200).json({ 
-        success: true, 
-        message: 'Signup recorded successfully',
-        referral_id: signupRecord.id
+      if (!vendorData.is_active) {
+        return res.status(400).json({ 
+          error: 'Program is not active' 
+        });
+      }
+    }
+
+    // Determine status based on event type
+    let status;
+    let commissionAmount = 0;
+
+    if (event === 'click') {
+      status = 'click';
+      commissionAmount = 0;
+    } else if (event === 'sale') {
+      status = 'pending_commission';
+      commissionAmount = 0; // Will be calculated later when sale is confirmed
+    }
+
+    // For clicks without program_id, we need to find the vendor_id
+    // This could happen if the tracking link doesn't include program_id
+    // For now, we'll require program_id for both events
+    if (!vendorId) {
+      return res.status(400).json({ 
+        error: 'program_id is required' 
       });
     }
 
-    // For other events, just log them (you can extend this)
-    console.log('VouchFor Event:', event_name, metadata);
+    // Insert referral record into referrals table
+    const referralData = {
+      affiliate_id: ref_id,
+      vendor_id: vendorId,
+      status: status,
+      commission_amount: commissionAmount,
+    };
+
+    const { data: referralRecord, error: insertError } = await supabase
+      .from('referrals')
+      .insert([referralData])
+      .select()
+      .single();
+
+    if (insertError) {
+      console.error('Error inserting referral:', insertError);
+      return res.status(500).json({ 
+        error: 'Failed to record event',
+        details: insertError.message 
+      });
+    }
+
+    console.log(`${event} event recorded:`, {
+      referral_id: referralRecord.id,
+      affiliate_id: ref_id,
+      vendor_id: vendorId,
+      status: status
+    });
+
     return res.status(200).json({ 
       success: true, 
-      message: 'Event received',
-      event: event_name
+      message: `${event} recorded successfully`,
+      referral_id: referralRecord.id,
+      status: referralRecord.status
     });
 
   } catch (error) {
@@ -170,4 +154,3 @@ export async function handleTrackEvent(req, res) {
 export default function trackEventRoute(req, res) {
   return handleTrackEvent(req, res);
 }
-

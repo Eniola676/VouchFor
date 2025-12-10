@@ -24,6 +24,7 @@ import AffiliateSettingsPage from './pages/affiliate/settings';
 import AffiliateProfilePage from './pages/affiliate/settings/profile';
 import AffiliatePayoutPage from './pages/affiliate/settings/payout';
 import AffiliateSecurityPage from './pages/affiliate/settings/security';
+import PartnersPage from './pages/dashboard/vendor/partners';
 
 function App() {
   return (
@@ -55,6 +56,7 @@ function App() {
             <Route path="/affiliate/settings/profile" element={<AffiliateProfilePage />} />
             <Route path="/affiliate/settings/payout" element={<AffiliatePayoutPage />} />
             <Route path="/affiliate/settings/security" element={<AffiliateSecurityPage />} />
+            <Route path="/dashboard/vendor/partners" element={<PartnersPage />} />
           </Routes>
         </BrowserRouter>
       </OfferDataProvider>

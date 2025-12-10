@@ -21,7 +21,7 @@ export function VendorSidebar() {
     },
     {
       label: "Partners",
-      href: "#",
+      href: "/dashboard/vendor/partners",
       icon: (
         <Users className="text-white h-5 w-5 flex-shrink-0" />
       ),

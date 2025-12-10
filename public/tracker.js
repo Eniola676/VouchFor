@@ -1,20 +1,32 @@
 /**
- * VouchFor Tracking SDK
+ * VouchFor Hybrid Click and Sale Tracking SDK
  * 
- * This script tracks referral signups and events on vendor websites.
+ * Idempotent tracking script for vendor websites.
+ * Implements both click tracking (on page load) and sale tracking.
  * 
  * Usage:
- * 1. Include this script on your page: <script src="https://your-domain.com/tracker.js"></script>
- * 2. Track events: window.vouchfor.track('signup', { email: 'user@example.com' })
+ * 1. Include this script: <script src="https://your-domain.com/tracker.js"></script>
+ * 2. Track sales: window.vouchfor('track', 'sale', { program_id: '...' })
  */
 
 (function() {
   'use strict';
 
-  // Storage key for referral ID
-  const STORAGE_KEY = 'vouchfor_referral_id';
-  const COOKIE_NAME = 'vouchfor_referral_id';
-  const COOKIE_EXPIRY_DAYS = 90; // 90 days cookie duration
+  // Prevent duplicate execution
+  if (window.vouchforInitialized) {
+    return;
+  }
+  window.vouchforInitialized = true;
+
+  // Storage configuration
+  const STORAGE_KEY = 'vouchfor_ref_id';
+  const STORAGE_EXPIRY_KEY = 'vouchfor_ref_id_expiry';
+  const STORAGE_EXPIRY_DAYS = 60; // 60 days expiry
+
+  // API endpoint - can be configured via window.VOUCHFOR_API_ENDPOINT
+  // Defaults to same origin if not specified (for same-domain deployments)
+  // For external vendor sites, set: window.VOUCHFOR_API_ENDPOINT = 'http://localhost:3001/api/track'
+  const API_ENDPOINT = window.VOUCHFOR_API_ENDPOINT || '/api/track';
 
   /**
    * Get URL parameter value
@@ -27,99 +39,64 @@
   }
 
   /**
-   * Get cookie value
+   * Check if stored ref_id is expired
    */
-  function getCookie(name) {
-    var nameEQ = name + '=';
-    var ca = document.cookie.split(';');
-    for (var i = 0; i < ca.length; i++) {
-      var c = ca[i];
-      while (c.charAt(0) === ' ') c = c.substring(1, c.length);
-      if (c.indexOf(nameEQ) === 0) return c.substring(nameEQ.length, c.length);
-    }
-    return null;
+  function isExpired(expiryTimestamp) {
+    if (!expiryTimestamp) return true;
+    return Date.now() > parseInt(expiryTimestamp, 10);
   }
 
   /**
-   * Set cookie
+   * Get stored referral ID from LocalStorage
    */
-  function setCookie(name, value, days) {
-    var expires = '';
-    if (days) {
-      var date = new Date();
-      date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
-      expires = '; expires=' + date.toUTCString();
-    }
-    document.cookie = name + '=' + (value || '') + expires + '; path=/; SameSite=Lax';
-  }
-
-  /**
-   * Get or set referral ID
-   */
-  function getReferralId() {
-    // Check URL parameter first
-    var refParam = getUrlParameter('ref');
-    if (refParam) {
-      // Save to both localStorage and cookie
-      try {
-        localStorage.setItem(STORAGE_KEY, refParam);
-      } catch (e) {
-        console.warn('VouchFor: Could not save to localStorage', e);
-      }
-      setCookie(COOKIE_NAME, refParam, COOKIE_EXPIRY_DAYS);
-      return refParam;
-    }
-
-    // Check cookie
-    var cookieRef = getCookie(COOKIE_NAME);
-    if (cookieRef) {
-      try {
-        localStorage.setItem(STORAGE_KEY, cookieRef);
-      } catch (e) {
-        // Ignore localStorage errors
-      }
-      return cookieRef;
-    }
-
-    // Check localStorage
+  function getStoredRefId() {
     try {
       var storedRef = localStorage.getItem(STORAGE_KEY);
-      if (storedRef) {
-        // Sync to cookie
-        setCookie(COOKIE_NAME, storedRef, COOKIE_EXPIRY_DAYS);
+      var storedExpiry = localStorage.getItem(STORAGE_EXPIRY_KEY);
+      
+      if (storedRef && !isExpired(storedExpiry)) {
         return storedRef;
+      } else if (storedRef && isExpired(storedExpiry)) {
+        // Clean up expired data
+        localStorage.removeItem(STORAGE_KEY);
+        localStorage.removeItem(STORAGE_EXPIRY_KEY);
       }
     } catch (e) {
-      // Ignore localStorage errors
+      console.warn('VouchFor: Error reading localStorage', e);
     }
-
     return null;
+  }
+
+  /**
+   * Save referral ID to LocalStorage with expiry
+   */
+  function saveRefId(refId) {
+    try {
+      var expiryTimestamp = Date.now() + (STORAGE_EXPIRY_DAYS * 24 * 60 * 60 * 1000);
+      localStorage.setItem(STORAGE_KEY, refId);
+      localStorage.setItem(STORAGE_EXPIRY_KEY, expiryTimestamp.toString());
+      console.log('VouchFor: Referral ID saved:', refId);
+      return true;
+    } catch (e) {
+      console.warn('VouchFor: Could not save to localStorage', e);
+      return false;
+    }
   }
 
   /**
    * Send tracking event to API
    */
-  function trackEvent(eventName, metaData) {
-    var referralId = getReferralId();
-    
-    if (!referralId) {
-      console.warn('VouchFor: No referral ID found. Make sure to include ?ref= parameter in the URL.');
-      return Promise.resolve();
-    }
-
+  function sendTrackingEvent(event, refId, programId) {
     var payload = {
-      referral_id: referralId,
-      event_name: eventName,
-      metadata: metaData || {},
+      event: event,
+      ref_id: refId,
+      program_id: programId || null,
       timestamp: new Date().toISOString(),
       url: window.location.href,
       user_agent: navigator.userAgent,
     };
 
-    // Determine API endpoint (use current origin or configured endpoint)
-    var apiEndpoint = window.VOUCHFOR_API_ENDPOINT || '/api/track/event';
-
-    return fetch(apiEndpoint, {
+    return fetch(API_ENDPOINT, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -128,47 +105,93 @@
     })
     .then(function(response) {
       if (!response.ok) {
-        throw new Error('Network response was not ok');
+        throw new Error('Network response was not ok: ' + response.status);
       }
       return response.json();
     })
     .then(function(data) {
-      console.log('VouchFor: Event tracked successfully', data);
+      console.log('VouchFor: ' + event + ' tracked successfully', data);
       return data;
     })
     .catch(function(error) {
-      console.error('VouchFor: Error tracking event', error);
+      console.error('VouchFor: Error tracking ' + event, error);
       throw error;
     });
   }
 
   /**
-   * Initialize on page load
+   * Track click event
+   * Called automatically when ?ref= is detected in URL
    */
-  function init() {
-    // Get referral ID from URL or storage
-    var referralId = getReferralId();
+  function trackClick(refId, programId) {
+    if (!refId) {
+      console.warn('VouchFor: No ref_id provided for click tracking');
+      return Promise.reject(new Error('No ref_id provided'));
+    }
+
+    // Send click event to API
+    // Note: program_id is optional for clicks but recommended
+    return sendTrackingEvent('click', refId, programId)
+      .catch(function(error) {
+        // Don't block page load if click tracking fails
+        console.warn('VouchFor: Click tracking failed (non-blocking):', error);
+      });
+  }
+
+  /**
+   * Track sale event
+   * Called manually via window.vouchfor('track', 'sale', { program_id: '...' })
+   */
+  function trackSale(programId) {
+    var refId = getStoredRefId();
     
-    if (referralId) {
-      console.log('VouchFor: Referral ID detected:', referralId);
+    if (!refId) {
+      console.warn('VouchFor: No referral ID found. User must visit via tracking link first.');
+      return Promise.reject(new Error('No referral ID found'));
+    }
+
+    if (!programId) {
+      console.warn('VouchFor: program_id is required for sale tracking');
+      return Promise.reject(new Error('program_id is required'));
+    }
+
+    return sendTrackingEvent('sale', refId, programId);
+  }
+
+  /**
+   * Initialize: Check for ?ref= in URL
+   * If found, send click event immediately, then save to LocalStorage
+   */
+  function initialize() {
+    var refParam = getUrlParameter('ref');
+    var programIdParam = getUrlParameter('program_id'); // Optional program_id from URL
+    
+    if (refParam) {
+      // Save to LocalStorage first
+      saveRefId(refParam);
+      
+      // Send click event immediately (non-blocking)
+      trackClick(refParam, programIdParam);
     }
   }
 
-  // Initialize when DOM is ready
+  // Initialize on page load
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init);
+    document.addEventListener('DOMContentLoaded', initialize);
   } else {
-    init();
+    initialize();
   }
 
-  // Expose global API
-  window.vouchfor = {
-    track: trackEvent,
-    getReferralId: getReferralId,
-    version: '1.0.0',
+  // Expose global function: window.vouchfor('track', 'sale', { program_id: '...' })
+  window.vouchfor = function(command, eventType, options) {
+    if (command === 'track' && eventType === 'sale') {
+      var programId = options && options.program_id ? options.program_id : null;
+      return trackSale(programId);
+    } else {
+      console.warn('VouchFor: Unknown command or event type. Use: vouchfor("track", "sale", { program_id: "..." })');
+      return Promise.reject(new Error('Unknown command or event type'));
+    }
   };
 
-  console.log('VouchFor: Tracking SDK loaded');
+  console.log('VouchFor: Hybrid Click and Sale Tracking SDK loaded');
 })();
-
-

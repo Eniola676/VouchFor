@@ -2,7 +2,8 @@ import { AffiliateSidebar } from '@/components/AffiliateSidebar';
 import { VendorSidebar } from '@/components/VendorSidebar';
 import DashboardHeader from '@/components/DashboardHeader';
 import { GridBackground } from '@/components/ui/grid-background';
-import { HelpCircle, Mail, MessageCircle, Book } from 'lucide-react';
+import { HelpCircle, Mail, Send, MessageSquare } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { cn } from '@/lib/utils';
@@ -100,45 +101,50 @@ export default function CustomerSupportPage() {
                 </a>
               </div>
 
-              {/* Live Chat */}
+              {/* DM on X */}
               <div className="bg-gray-900/50 border border-gray-800 rounded-lg p-6 hover:border-primary-600 transition-colors">
                 <div className="flex items-center gap-4 mb-4">
                   <div className="w-12 h-12 rounded-lg bg-primary-600/20 flex items-center justify-center">
-                    <MessageCircle className="w-6 h-6 text-primary-400" />
+                    <Send className="w-6 h-6 text-primary-400" />
                   </div>
                   <div>
-                    <h3 className="text-lg font-semibold text-white">Live Chat</h3>
-                    <p className="text-sm text-gray-400">Chat with our team</p>
+                    <h3 className="text-lg font-semibold text-white">DM on X</h3>
+                    <p className="text-sm text-gray-400">Send us a direct message</p>
                   </div>
                 </div>
                 <p className="text-gray-300 text-sm mb-4">
-                  Available Monday-Friday, 9 AM - 5 PM EST
-                </p>
-                <button className="inline-flex items-center gap-2 text-primary-400 hover:text-primary-300 text-sm font-medium">
-                  Start Chat
-                </button>
-              </div>
-
-              {/* Help Center */}
-              <div className="bg-gray-900/50 border border-gray-800 rounded-lg p-6 hover:border-primary-600 transition-colors">
-                <div className="flex items-center gap-4 mb-4">
-                  <div className="w-12 h-12 rounded-lg bg-primary-600/20 flex items-center justify-center">
-                    <Book className="w-6 h-6 text-primary-400" />
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-semibold text-white">Help Center</h3>
-                    <p className="text-sm text-gray-400">Browse documentation</p>
-                  </div>
-                </div>
-                <p className="text-gray-300 text-sm mb-4">
-                  Find answers to common questions and tutorials.
+                  Reach out to us on X (Twitter) for quick support.
                 </p>
                 <a
-                  href="#"
+                  href="https://x.com/no_user009?s=21"
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="inline-flex items-center gap-2 text-primary-400 hover:text-primary-300 text-sm font-medium"
                 >
-                  Visit Help Center
+                  Send DM on X
                 </a>
+              </div>
+
+              {/* Feedback */}
+              <div className="bg-gray-900/50 border border-gray-800 rounded-lg p-6 hover:border-primary-600 transition-colors">
+                <div className="flex items-center gap-4 mb-4">
+                  <div className="w-12 h-12 rounded-lg bg-primary-600/20 flex items-center justify-center">
+                    <MessageSquare className="w-6 h-6 text-primary-400" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-white">Feedback</h3>
+                    <p className="text-sm text-gray-400">Share your thoughts</p>
+                  </div>
+                </div>
+                <p className="text-gray-300 text-sm mb-4">
+                  Send us feedback, feature requests, or report issues.
+                </p>
+                <Link
+                  to="/feedback"
+                  className="inline-flex items-center gap-2 text-primary-400 hover:text-primary-300 text-sm font-medium"
+                >
+                  Go to Feedback Page
+                </Link>
               </div>
 
               {/* FAQ */}

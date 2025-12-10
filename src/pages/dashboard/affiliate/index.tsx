@@ -1,83 +1,15 @@
-import { useEffect, useState } from 'react';
 import { AffiliateSidebar } from '@/components/AffiliateSidebar';
 import DashboardHeader from '@/components/DashboardHeader';
 import { GridBackground } from '@/components/ui/grid-background';
 import PerformanceOverview from '@/components/affiliate/PerformanceOverview';
 import YourActivity from '@/components/affiliate/YourActivity';
 import ActivePrograms from '@/components/affiliate/ActivePrograms';
-import { supabase } from '@/lib/supabase';
+import { useAffiliateStats } from '@/hooks/useAffiliateStats';
 import { cn } from '@/lib/utils';
-
-interface PerformanceStats {
-  clicks: number;
-  signups: number;
-  pendingCommission: number;
-  paidCommission: number;
-}
+import { Loader2 } from 'lucide-react';
 
 export default function AffiliateDashboard() {
-  const [stats, setStats] = useState<PerformanceStats>({
-    clicks: 0,
-    signups: 0,
-    pendingCommission: 0,
-    paidCommission: 0,
-  });
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    fetchPerformanceStats();
-  }, []);
-
-  const fetchPerformanceStats = async () => {
-    try {
-      // Get current user
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        setLoading(false);
-        return;
-      }
-
-      // Fetch all referrals for this affiliate
-      const { data: referrals, error } = await supabase
-        .from('referrals')
-        .select('status, commission_amount')
-        .eq('affiliate_id', user.id);
-
-      if (error) {
-        console.error('Error fetching referrals:', error);
-        setLoading(false);
-        return;
-      }
-
-      interface Referral {
-        status: string;
-        commission_amount: number | string;
-      }
-
-      // Calculate stats from referrals
-      const clicks = referrals?.filter((r: Referral) => r.status === 'click').length || 0;
-      const signups = referrals?.filter((r: Referral) => r.status === 'signup').length || 0;
-      
-      const pendingCommission = referrals
-        ?.filter((r: Referral) => r.status === 'pending_commission')
-        .reduce((sum: number, r: Referral) => sum + parseFloat(String(r.commission_amount || 0)), 0) || 0;
-      
-      const paidCommission = referrals
-        ?.filter((r: Referral) => r.status === 'paid_commission')
-        .reduce((sum: number, r: Referral) => sum + parseFloat(String(r.commission_amount || 0)), 0) || 0;
-
-      setStats({
-        clicks,
-        signups,
-        pendingCommission,
-        paidCommission,
-      });
-    } catch (err) {
-      console.error('Error fetching performance stats:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { stats, loading, error } = useAffiliateStats();
 
   return (
     <div className={cn(
@@ -108,7 +40,16 @@ export default function AffiliateDashboard() {
             
             {loading ? (
               <div className="bg-black/80 backdrop-blur-xl border border-gray-800 rounded-lg p-6">
-                <p className="text-gray-400 text-center">Loading performance data...</p>
+                <div className="flex items-center justify-center gap-2">
+                  <Loader2 className="w-5 h-5 animate-spin text-primary-400" />
+                  <p className="text-gray-400">Loading performance data...</p>
+                </div>
+              </div>
+            ) : error ? (
+              <div className="bg-black/80 backdrop-blur-xl border border-red-800 rounded-lg p-6">
+                <p className="text-red-400 text-center">
+                  Error loading performance data: {error.message}
+                </p>
               </div>
             ) : (
               <PerformanceOverview 

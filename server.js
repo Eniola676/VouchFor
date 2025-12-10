@@ -21,7 +21,11 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 
 // Middleware
-app.use(cors());
+// CORS: Allow requests from frontend and external vendor sites
+app.use(cors({
+  origin: true, // Allow all origins (configure specific origins in production)
+  credentials: false
+}));
 app.use(express.json());
 
 // Health check
@@ -29,12 +33,17 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', service: 'vouchfor-api' });
 });
 
-// Tracking endpoint
+// Tracking endpoint (Destination Tracking)
+app.post('/api/track', handleTrackEvent);
+
+// Legacy endpoint for backward compatibility
 app.post('/api/track/event', handleTrackEvent);
 
 // Start server
 app.listen(PORT, () => {
   console.log(`VouchFor API server running on port ${PORT}`);
-  console.log(`Tracking endpoint: http://localhost:${PORT}/api/track/event`);
+  console.log(`Hybrid Tracking endpoint: http://localhost:${PORT}/api/track`);
+  console.log(`  - Accepts: { event: 'click' | 'sale', ref_id: '...', program_id: '...' }`);
+  console.log(`Legacy endpoint: http://localhost:${PORT}/api/track/event`);
 });
 
