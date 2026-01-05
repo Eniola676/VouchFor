@@ -201,11 +201,11 @@ export default function ActivePrograms() {
     return (
       <div>
         <div className="flex items-center gap-2 mb-4">
-          <ExternalLink className="w-5 h-5 text-white" />
-          <h2 className="text-lg font-semibold text-white">Active Programs</h2>
+          <ExternalLink className="w-5 h-5 text-text-primary" />
+          <h2 className="text-lg font-semibold text-text-primary">Active Programs</h2>
         </div>
-        <div className="bg-black/80 backdrop-blur-xl border border-gray-800 rounded-lg p-6">
-          <p className="text-gray-400 text-center">Loading programs...</p>
+        <div className="bg-surface-elevated backdrop-blur-xl border border-border rounded-lg p-6">
+          <p className="text-text-secondary text-center">Loading programs...</p>
         </div>
       </div>
     );
@@ -215,12 +215,12 @@ export default function ActivePrograms() {
     return (
       <div>
         <div className="flex items-center gap-2 mb-4">
-          <ExternalLink className="w-5 h-5 text-white" />
-          <h2 className="text-lg font-semibold text-white">Active Programs</h2>
+          <ExternalLink className="w-5 h-5 text-text-primary" />
+          <h2 className="text-lg font-semibold text-text-primary">Active Programs</h2>
         </div>
-        <div className="bg-black/80 backdrop-blur-xl border border-gray-800 rounded-lg p-6 text-center">
-          <p className="text-gray-400 mb-2">No active programs yet</p>
-          <p className="text-sm text-gray-500">Join a program to start earning commissions</p>
+        <div className="bg-surface-elevated backdrop-blur-xl border border-border rounded-lg p-6 text-center">
+          <p className="text-text-secondary mb-2">No active programs yet</p>
+          <p className="text-sm text-text-tertiary">Join a program to start earning commissions</p>
         </div>
       </div>
     );
@@ -229,8 +229,8 @@ export default function ActivePrograms() {
   return (
     <div>
       <div className="flex items-center gap-2 mb-4">
-        <ExternalLink className="w-5 h-5 text-white" />
-        <h2 className="text-lg font-semibold text-white">Active Programs</h2>
+        <ExternalLink className="w-5 h-5 text-text-primary" />
+        <h2 className="text-lg font-semibold text-text-primary">Active Programs</h2>
       </div>
       
       <div className="grid gap-4 md:grid-cols-2">
@@ -243,24 +243,24 @@ export default function ActivePrograms() {
           return (
             <div
               key={affiliateProgram.id}
-              className="bg-black/80 backdrop-blur-xl border border-gray-800 rounded-lg p-6"
+              className="bg-surface-elevated backdrop-blur-xl border border-border rounded-lg p-6"
             >
               {/* Header */}
               <div className="mb-4">
-                <h3 className="text-lg font-semibold text-white mb-2">
+                <h3 className="text-lg font-semibold text-text-primary mb-2">
                   {program.program_name}
                 </h3>
                 <div className="flex items-center gap-2">
-                  <span className="text-sm text-gray-400">Your Commission:</span>
-                  <span className="text-sm font-semibold text-white">
+                  <span className="text-sm text-text-secondary">Your Commission:</span>
+                  <span className="text-sm font-semibold text-text-primary">
                     {formatCommission(program)}
                   </span>
                 </div>
               </div>
 
               {/* Tracking Link */}
-              <div className="mt-4 pt-4 border-t border-gray-800">
-                <label className="block text-xs font-medium text-gray-400 mb-2">
+              <div className="mt-4 pt-4 border-t border-border">
+                <label className="block text-xs font-medium text-text-secondary mb-2">
                   Your Unique Link
                 </label>
                 <div className="flex gap-2">
@@ -268,7 +268,7 @@ export default function ActivePrograms() {
                     type="text"
                     value={trackingLink}
                     readOnly
-                    className="flex-1 px-3 py-2 bg-gray-900/50 border border-gray-700 text-white text-sm rounded-md focus:ring-2 focus:ring-primary-600 focus:border-primary-600 outline-none"
+                    className="flex-1 px-3 py-2 bg-bg-secondary border border-border text-text-primary text-sm rounded-md focus:ring-2 focus:ring-accent focus:border-accent outline-none"
                   />
                   <button
                     onClick={() => copyToClipboard(trackingLink, affiliateProgram.id)}
@@ -276,7 +276,7 @@ export default function ActivePrograms() {
                       "px-4 py-2 rounded-md border transition",
                       copiedLinkId === affiliateProgram.id
                         ? "bg-green-900/30 border-green-800 text-green-400"
-                        : "bg-gray-900/50 border-gray-700 text-white hover:bg-gray-800"
+                        : "bg-bg-secondary border-border text-text-primary hover:bg-bg-tertiary"
                     )}
                     title="Copy to clipboard"
                   >
@@ -287,20 +287,20 @@ export default function ActivePrograms() {
                     )}
                   </button>
                 </div>
-                <p className="text-xs text-gray-500 mt-2">
+                <p className="text-xs text-text-tertiary mt-2">
                   Share this link to earn commissions on referrals
                 </p>
               </div>
 
               {/* Leave Program Button */}
-              <div className="mt-4 pt-4 border-t border-gray-800">
+              <div className="mt-4 pt-4 border-t border-border">
                 {showConfirmLeave === affiliateProgram.id ? (
                   <div className="bg-red-900/20 border border-red-800 rounded-lg p-4">
                     <div className="flex items-start gap-3 mb-4">
                       <AlertTriangle className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
                       <div className="flex-1">
-                        <h4 className="text-sm font-semibold text-white mb-1">Leave Program?</h4>
-                        <p className="text-xs text-gray-400">
+                        <h4 className="text-sm font-semibold text-text-primary mb-1">Leave Program?</h4>
+                        <p className="text-xs text-text-secondary">
                           Are you sure you want to leave this program? You'll stop earning commissions and your tracking link will no longer work.
                         </p>
                       </div>
@@ -316,7 +316,7 @@ export default function ActivePrograms() {
                       <button
                         onClick={() => setShowConfirmLeave(null)}
                         disabled={leavingProgramId === affiliateProgram.id}
-                        className="flex-1 px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white text-sm rounded-md transition disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="flex-1 px-4 py-2 bg-bg-tertiary hover:bg-bg-secondary border border-border text-text-primary text-sm rounded-md transition disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         Cancel
                       </button>
@@ -326,7 +326,7 @@ export default function ActivePrograms() {
                   <button
                     onClick={() => setShowConfirmLeave(affiliateProgram.id)}
                     disabled={leavingProgramId === affiliateProgram.id}
-                    className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-gray-900/50 hover:bg-gray-800 border border-gray-700 text-gray-300 hover:text-white text-sm rounded-md transition disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-bg-secondary hover:bg-bg-tertiary border border-border text-text-secondary hover:text-text-primary text-sm rounded-md transition disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <LogOut className="w-4 h-4" />
                     Leave Program

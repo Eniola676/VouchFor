@@ -7,11 +7,16 @@ interface Commission {
   id: string;
   created_at: string;
   vendor_id: string;
-  status: 'click' | 'signup' | 'pending_commission' | 'paid_commission';
+  status: 'pending' | 'approved' | 'paid' | 'reversed';
   commission_amount: number;
+  sale_amount: number;
   vendor?: {
     program_name: string;
     vendor_slug: string;
+  };
+  conversion?: {
+    converted_at: string;
+    amount: number;
   };
 }
 
@@ -39,22 +44,27 @@ export default function CommissionsTableWithFilters() {
         return;
       }
 
-      // Build query
+      // Build query - use new commissions table
       let query = supabase
-        .from('referrals')
+        .from('commissions')
         .select(`
           id,
           created_at,
           vendor_id,
           status,
           commission_amount,
+          sale_amount,
           vendors:vendor_id (
             program_name,
             vendor_slug
+          ),
+          conversions:conversion_id (
+            converted_at,
+            amount
           )
         `)
         .eq('affiliate_id', user.id)
-        .neq('status', 'click') // Exclude clicks, only show commissions
+        .in('status', ['pending', 'approved', 'paid']) // New status values
         .order('created_at', { ascending: sortOrder === 'asc' });
 
       // Apply filters
@@ -74,16 +84,21 @@ export default function CommissionsTableWithFilters() {
         return;
       }
 
-      // Transform data to include vendor info
+      // Transform data to include vendor and conversion info
       const transformedCommissions = (data || []).map((item: any) => ({
         id: item.id,
         created_at: item.created_at,
         vendor_id: item.vendor_id,
         status: item.status,
         commission_amount: parseFloat(String(item.commission_amount || 0)),
+        sale_amount: parseFloat(String(item.sale_amount || 0)),
         vendor: item.vendors ? {
           program_name: item.vendors.program_name,
           vendor_slug: item.vendors.vendor_slug,
+        } : undefined,
+        conversion: item.conversions ? {
+          converted_at: item.conversions.converted_at,
+          amount: parseFloat(String(item.conversions.amount || 0)),
         } : undefined,
       }));
 
@@ -103,42 +118,55 @@ export default function CommissionsTableWithFilters() {
     });
   };
 
-  const getEstimatedAvailableDate = (createdAt: string, status: string) => {
-    if (status === 'paid_commission') {
+  const getEstimatedAvailableDate = (createdAt: string, status: string, conversionDate?: string) => {
+    if (status === 'paid') {
       return formatDate(createdAt);
     }
+    if (status === 'approved') {
+      // For approved, typically available soon (add 7 days)
+      const date = new Date(conversionDate || createdAt);
+      date.setDate(date.getDate() + 7);
+      return formatDate(date.toISOString());
+    }
     // For pending, add 30 days (net_30)
-    const date = new Date(createdAt);
+    const date = new Date(conversionDate || createdAt);
     date.setDate(date.getDate() + 30);
     return formatDate(date.toISOString());
   };
 
   const getStatusDisplay = (status: string) => {
     const statusConfig = {
-      pending_commission: {
-        label: 'Pending approval',
-        icon: Clock,
-        className: 'text-blue-400',
-        bgClassName: 'bg-blue-900/20',
-        dotColor: 'bg-blue-400',
-      },
-      paid_commission: {
-        label: 'Withdrawn',
-        icon: CheckCircle2,
-        className: 'text-green-400',
-        bgClassName: 'bg-green-900/20',
-        dotColor: 'bg-green-400',
-      },
-      signup: {
-        label: 'Signup',
+      pending: {
+        label: 'Pending',
         icon: Clock,
         className: 'text-yellow-400',
         bgClassName: 'bg-yellow-900/20',
         dotColor: 'bg-yellow-400',
       },
+      approved: {
+        label: 'Approved',
+        icon: CheckCircle2,
+        className: 'text-blue-400',
+        bgClassName: 'bg-blue-900/20',
+        dotColor: 'bg-blue-400',
+      },
+      paid: {
+        label: 'Paid',
+        icon: CheckCircle2,
+        className: 'text-green-400',
+        bgClassName: 'bg-green-900/20',
+        dotColor: 'bg-green-400',
+      },
+      reversed: {
+        label: 'Reversed',
+        icon: Clock,
+        className: 'text-red-400',
+        bgClassName: 'bg-red-900/20',
+        dotColor: 'bg-red-400',
+      },
     };
 
-    const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.pending_commission;
+    const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.pending;
     const Icon = config.icon;
 
     return (
@@ -245,9 +273,9 @@ export default function CommissionsTableWithFilters() {
                 className="bg-gray-900 border border-gray-700 text-white text-sm rounded px-3 py-1.5 focus:ring-2 focus:ring-primary-600 focus:border-primary-600 outline-none"
               >
                 <option value="all">All</option>
-                <option value="pending_commission">Pending approval</option>
-                <option value="paid_commission">Withdrawn</option>
-                <option value="signup">Signup</option>
+                <option value="pending">Pending</option>
+                <option value="approved">Approved</option>
+                <option value="paid">Paid</option>
               </select>
             </div>
 
@@ -317,7 +345,7 @@ export default function CommissionsTableWithFilters() {
                   {commissions.map((commission) => (
                     <tr key={commission.id} className="hover:bg-gray-900/30 transition">
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
-                        {formatDate(commission.created_at)}
+                        {formatDate(commission.conversion?.converted_at || commission.created_at)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-white font-medium">
                         {commission.vendor?.program_name || 'Unknown Program'}
@@ -329,7 +357,11 @@ export default function CommissionsTableWithFilters() {
                         {getStatusDisplay(commission.status)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400">
-                        {getEstimatedAvailableDate(commission.created_at, commission.status)}
+                        {getEstimatedAvailableDate(
+                          commission.created_at, 
+                          commission.status,
+                          commission.conversion?.converted_at
+                        )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-white font-semibold">
                         ${commission.commission_amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD

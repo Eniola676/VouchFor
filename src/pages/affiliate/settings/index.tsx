@@ -1,7 +1,6 @@
 import { Link } from 'react-router-dom';
 import { AffiliateSidebar } from '@/components/AffiliateSidebar';
 import DashboardHeader from '@/components/DashboardHeader';
-import { GridBackground } from '@/components/ui/grid-background';
 import { cn } from '@/lib/utils';
 import { User, CreditCard, Shield, ArrowRight } from 'lucide-react';
 
@@ -32,8 +31,6 @@ export default function AffiliateSettingsPage() {
 
   return (
     <div className={cn("flex flex-col w-full min-h-screen bg-black", "relative")}>
-      <GridBackground />
-      
       {/* Top Header Bar */}
       <div className="relative z-20">
         <DashboardHeader />
@@ -78,5 +75,9 @@ export default function AffiliateSettingsPage() {
     </div>
   );
 }
+
+
+
+
 
 

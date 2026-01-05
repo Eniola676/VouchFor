@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { AffiliateSidebar } from '@/components/AffiliateSidebar';
-import { GridBackground } from '@/components/ui/grid-background';
 import FundsOverview from '@/components/affiliate/FundsOverview';
 import CommissionsTableWithFilters from '@/components/affiliate/CommissionsTableWithFilters';
 import { supabase } from '@/lib/supabase';
@@ -28,12 +27,12 @@ export default function CommissionsPage() {
         return;
       }
 
-      // Fetch all commissions (excluding clicks)
-      const { data: referrals, error } = await supabase
-        .from('referrals')
+      // Fetch all commissions from new commissions table
+      const { data: commissions, error } = await supabase
+        .from('commissions')
         .select('status, commission_amount, created_at')
         .eq('affiliate_id', user.id)
-        .in('status', ['pending_commission', 'paid_commission', 'signup']);
+        .in('status', ['pending', 'approved', 'paid']);
 
       if (error) {
         console.error('Error fetching commissions:', error);
@@ -41,35 +40,35 @@ export default function CommissionsPage() {
         return;
       }
 
-      interface Referral {
+      interface Commission {
         status: string;
         commission_amount: number | string;
         created_at: string;
       }
 
-      // Calculate total commissions (paid + pending)
-      const totalCommissions = referrals?.reduce(
-        (sum: number, r: Referral) => sum + parseFloat(String(r.commission_amount || 0)),
+      // Calculate total commissions (all statuses)
+      const totalCommissions = commissions?.reduce(
+        (sum: number, c: Commission) => sum + parseFloat(String(c.commission_amount || 0)),
         0
       ) || 0;
 
       // Calculate paid commissions (available for withdrawal)
-      const paidCommissions = referrals
-        ?.filter((r: Referral) => r.status === 'paid_commission')
-        .reduce((sum: number, r: Referral) => sum + parseFloat(String(r.commission_amount || 0)), 0) || 0;
+      const paidCommissions = commissions
+        ?.filter((c: Commission) => c.status === 'paid')
+        .reduce((sum: number, c: Commission) => sum + parseFloat(String(c.commission_amount || 0)), 0) || 0;
 
-      // Get current month's pending commissions for projected earnings
+      // Get current month's pending and approved commissions for projected earnings
       const now = new Date();
-      const currentMonthPending = referrals
-        ?.filter((r: Referral) => {
-          const createdDate = new Date(r.created_at);
+      const currentMonthPending = commissions
+        ?.filter((c: Commission) => {
+          const createdDate = new Date(c.created_at);
           return (
-            r.status === 'pending_commission' &&
+            (c.status === 'pending' || c.status === 'approved') &&
             createdDate.getMonth() === now.getMonth() &&
             createdDate.getFullYear() === now.getFullYear()
           );
         })
-        .reduce((sum: number, r: Referral) => sum + parseFloat(String(r.commission_amount || 0)), 0) || 0;
+        .reduce((sum: number, c: Commission) => sum + parseFloat(String(c.commission_amount || 0)), 0) || 0;
 
       // Total available = paid commissions - processing fee (if > 0)
       const totalAvailable = paidCommissions > 0 ? Math.max(0, paidCommissions - stats.processingFee) : 0;
@@ -97,7 +96,6 @@ export default function CommissionsPage() {
       "rounded-md flex flex-col md:flex-row w-full flex-1 min-h-screen bg-black",
       "relative"
     )}>
-      <GridBackground />
       <div className="relative z-10">
         <AffiliateSidebar />
       </div>

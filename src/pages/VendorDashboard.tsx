@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { VendorSidebar } from '../components/VendorSidebar';
 import DashboardHeader from '../components/DashboardHeader';
-import { GridBackground } from '../components/ui/grid-background';
 import OverviewMetrics from '../components/vendor/OverviewMetrics';
 import PerformanceChart from '../components/vendor/PerformanceChart';
 import ActionItems from '../components/vendor/ActionItems';
@@ -155,8 +154,6 @@ export default function VendorDashboard() {
       "flex flex-col w-full min-h-screen bg-black",
       "relative"
     )}>
-      <GridBackground />
-      
       {/* Top Header Bar */}
       <div className="relative z-20">
         <DashboardHeader />

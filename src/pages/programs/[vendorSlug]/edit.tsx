@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { VendorSidebar } from '@/components/VendorSidebar';
-import { GridBackground } from '@/components/ui/grid-background';
 import { supabase } from '@/lib/supabase';
 import { cn } from '@/lib/utils';
 import { ArrowLeft, Copy, Check, ExternalLink, Code } from 'lucide-react';
@@ -120,7 +119,6 @@ export default function ProgramEditPage() {
   if (loading) {
     return (
       <div className={cn("rounded-md flex flex-col md:flex-row w-full flex-1 min-h-screen bg-black", "relative")}>
-        <GridBackground />
         <div className="relative z-10">
           <VendorSidebar />
         </div>
@@ -134,7 +132,6 @@ export default function ProgramEditPage() {
   if (!program || error) {
     return (
       <div className={cn("rounded-md flex flex-col md:flex-row w-full flex-1 min-h-screen bg-black", "relative")}>
-        <GridBackground />
         <div className="relative z-10">
           <VendorSidebar />
         </div>
@@ -152,7 +149,6 @@ export default function ProgramEditPage() {
 
   return (
     <div className={cn("rounded-md flex flex-col md:flex-row w-full flex-1 min-h-screen bg-black", "relative")}>
-      <GridBackground />
       <div className="relative z-10">
         <VendorSidebar />
       </div>
@@ -177,6 +173,87 @@ export default function ProgramEditPage() {
               <p className="text-red-400 text-sm">{error}</p>
             </div>
           )}
+
+          {/* Current Program Details Section */}
+          <div className="bg-black/80 backdrop-blur-xl border border-gray-800 rounded-lg p-6 mb-6">
+            <h2 className="text-lg font-semibold text-white mb-4">Current Program Details</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs text-gray-400 mb-1">Program Name</label>
+                <p className="text-sm text-white">{program.program_name}</p>
+              </div>
+              <div>
+                <label className="block text-xs text-gray-400 mb-1">Status</label>
+                <p className="text-sm text-white">
+                  <span className={`px-2 py-1 rounded text-xs ${
+                    program.is_active 
+                      ? 'bg-green-900/30 text-green-400 border border-green-800' 
+                      : 'bg-gray-900/30 text-gray-400 border border-gray-800'
+                  }`}>
+                    {program.is_active ? 'Active' : 'Inactive'}
+                  </span>
+                </p>
+              </div>
+              <div>
+                <label className="block text-xs text-gray-400 mb-1">Destination URL</label>
+                <p className="text-sm text-white break-all">{program.destination_url}</p>
+              </div>
+              <div>
+                <label className="block text-xs text-gray-400 mb-1">Commission Type</label>
+                <p className="text-sm text-white capitalize">{program.commission_type}</p>
+              </div>
+              <div>
+                <label className="block text-xs text-gray-400 mb-1">Commission Value</label>
+                <p className="text-sm text-white">
+                  {program.commission_type === 'percentage' 
+                    ? `${program.commission_value}%` 
+                    : `$${parseFloat(program.commission_value || '0').toLocaleString()}`}
+                </p>
+              </div>
+              <div>
+                <label className="block text-xs text-gray-400 mb-1">Cookie Duration</label>
+                <p className="text-sm text-white">{program.cookie_duration} days</p>
+              </div>
+              <div>
+                <label className="block text-xs text-gray-400 mb-1">Cooling Off Period</label>
+                <p className="text-sm text-white">{program.cooling_off_period} days</p>
+              </div>
+              <div>
+                <label className="block text-xs text-gray-400 mb-1">Payout Schedule</label>
+                <p className="text-sm text-white">
+                  {program.payout_schedule?.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()) || 'N/A'}
+                </p>
+              </div>
+              <div>
+                <label className="block text-xs text-gray-400 mb-1">Payout Method</label>
+                <p className="text-sm text-white">
+                  {program.payout_method?.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()) || 'N/A'}
+                </p>
+              </div>
+              <div>
+                <label className="block text-xs text-gray-400 mb-1">Minimum Payout Threshold</label>
+                <p className="text-sm text-white">
+                  ${parseFloat(program.minimum_payout_threshold || '0').toLocaleString()}
+                </p>
+              </div>
+              <div>
+                <label className="block text-xs text-gray-400 mb-1">Transaction Fees</label>
+                <p className="text-sm text-white capitalize">{program.transaction_fees || 'N/A'}</p>
+              </div>
+              <div>
+                <label className="block text-xs text-gray-400 mb-1">Service Price</label>
+                <p className="text-sm text-white">
+                  {program.service_price 
+                    ? `$${parseFloat(program.service_price).toLocaleString()}` 
+                    : 'N/A'}
+                </p>
+              </div>
+              <div>
+                <label className="block text-xs text-gray-400 mb-1">Vendor Slug</label>
+                <p className="text-sm text-white">{program.vendor_slug}</p>
+              </div>
+            </div>
+          </div>
 
           <div className="grid lg:grid-cols-2 gap-6">
             {/* Left Column - Edit Form */}
@@ -252,17 +329,103 @@ export default function ProgramEditPage() {
 
                     <div>
                       <label className="block text-sm font-medium text-gray-300 mb-2">
-                        Status
+                        Cooling Off Period (days)
+                      </label>
+                      <input
+                        type="number"
+                        value={program.cooling_off_period}
+                        onChange={(e) => setProgram({ ...program, cooling_off_period: parseInt(e.target.value) || 0 })}
+                        className="w-full px-4 py-2 bg-gray-900/50 border border-gray-700 text-white rounded-md focus:ring-2 focus:ring-primary-600 focus:border-primary-600 outline-none transition"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                        Payout Schedule
                       </label>
                       <select
-                        value={program.is_active ? 'active' : 'inactive'}
-                        onChange={(e) => setProgram({ ...program, is_active: e.target.value === 'active' })}
+                        value={program.payout_schedule}
+                        onChange={(e) => setProgram({ ...program, payout_schedule: e.target.value })}
                         className="w-full px-4 py-2 bg-gray-900/50 border border-gray-700 text-white rounded-md focus:ring-2 focus:ring-primary-600 focus:border-primary-600 outline-none transition"
                       >
-                        <option value="active">Active</option>
-                        <option value="inactive">Inactive</option>
+                        <option value="monthly_1st">Monthly (1st of month)</option>
+                        <option value="net_15">Net 15</option>
+                        <option value="net_30">Net 30</option>
+                        <option value="upon_request">Upon Request</option>
                       </select>
                     </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                        Payout Method
+                      </label>
+                      <select
+                        value={program.payout_method}
+                        onChange={(e) => setProgram({ ...program, payout_method: e.target.value })}
+                        className="w-full px-4 py-2 bg-gray-900/50 border border-gray-700 text-white rounded-md focus:ring-2 focus:ring-primary-600 focus:border-primary-600 outline-none transition"
+                      >
+                        <option value="bank_transfer">Bank Transfer</option>
+                        <option value="other">Other</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                        Minimum Payout Threshold
+                      </label>
+                      <input
+                        type="text"
+                        value={program.minimum_payout_threshold}
+                        onChange={(e) => setProgram({ ...program, minimum_payout_threshold: e.target.value })}
+                        className="w-full px-4 py-2 bg-gray-900/50 border border-gray-700 text-white rounded-md focus:ring-2 focus:ring-primary-600 focus:border-primary-600 outline-none transition"
+                        placeholder="10000"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                        Transaction Fees
+                      </label>
+                      <select
+                        value={program.transaction_fees}
+                        onChange={(e) => setProgram({ ...program, transaction_fees: e.target.value })}
+                        className="w-full px-4 py-2 bg-gray-900/50 border border-gray-700 text-white rounded-md focus:ring-2 focus:ring-primary-600 focus:border-primary-600 outline-none transition"
+                      >
+                        <option value="vendor">Vendor</option>
+                        <option value="affiliate">Affiliate</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      Service Price
+                    </label>
+                    <input
+                      type="text"
+                      value={program.service_price || ''}
+                      onChange={(e) => setProgram({ ...program, service_price: e.target.value || null })}
+                      className="w-full px-4 py-2 bg-gray-900/50 border border-gray-700 text-white rounded-md focus:ring-2 focus:ring-primary-600 focus:border-primary-600 outline-none transition"
+                      placeholder="Optional"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      Status
+                    </label>
+                    <select
+                      value={program.is_active ? 'active' : 'inactive'}
+                      onChange={(e) => setProgram({ ...program, is_active: e.target.value === 'active' })}
+                      className="w-full px-4 py-2 bg-gray-900/50 border border-gray-700 text-white rounded-md focus:ring-2 focus:ring-primary-600 focus:border-primary-600 outline-none transition"
+                    >
+                      <option value="active">Active</option>
+                      <option value="inactive">Inactive</option>
+                    </select>
                   </div>
 
                   <Button

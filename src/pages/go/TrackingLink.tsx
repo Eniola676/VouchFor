@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
-import { GridBackground } from '@/components/ui/grid-background';
 
 export default function TrackingLinkPage() {
   const { affiliateId, programId } = useParams<{ affiliateId: string; programId: string }>();
@@ -23,7 +22,7 @@ export default function TrackingLinkPage() {
       // Step 1: Fetch vendor/program data using programId (which is vendor_id)
       const { data: vendorData, error: vendorError } = await supabase
         .from('vendors')
-        .select('id, destination_url, program_name, is_active, commission_type, commission_value')
+        .select('id, destination_url, program_name, is_active, commission_type, commission_value, cookie_duration')
         .eq('id', programId)
         .eq('is_active', true)
         .single();
@@ -41,54 +40,65 @@ export default function TrackingLinkPage() {
         return;
       }
 
-      // Step 2: Record the click in referrals table
-      // CRITICAL: Await this before redirecting to ensure the click is saved
+      // Step 2: Create referral session (new system)
+      // Generate unique session token
+      const sessionToken = crypto.randomUUID();
+      const cookieDuration = vendorData.cookie_duration || 60; // Default 60 days
+      const expiresAt = new Date(Date.now() + cookieDuration * 24 * 60 * 60 * 1000).toISOString();
+
+      // Get user agent and referrer
+      const userAgent = navigator.userAgent;
+      const referrerUrl = document.referrer || null;
+
       try {
-        const { data: referralData, error: referralError } = await supabase
-          .from('referrals')
+        const { data: sessionData, error: sessionError } = await supabase
+          .from('referral_sessions')
           .insert({
             affiliate_id: affiliateId,
             vendor_id: programId,
-            status: 'click',
-            commission_amount: 0, // Clicks don't have commission yet
+            session_token: sessionToken,
+            user_agent: userAgent,
+            referer_url: referrerUrl,
+            expires_at: expiresAt,
+            is_active: true,
           })
           .select()
           .single();
 
-        if (referralError) {
-          console.error('❌ Failed to record click - Supabase Error:', {
-            message: referralError.message,
-            details: referralError.details,
-            hint: referralError.hint,
-            code: referralError.code,
-            error: referralError,
+        if (sessionError) {
+          console.error('❌ Failed to create referral session - Supabase Error:', {
+            message: sessionError.message,
+            details: sessionError.details,
+            hint: sessionError.hint,
+            code: sessionError.code,
+            error: sessionError,
           });
           // Log error but don't block redirect - tracking is nice-to-have
         } else {
-          console.log('✅ Click recorded successfully:', referralData);
+          console.log('✅ Referral session created successfully:', sessionData);
         }
       } catch (err) {
         // Enhanced error logging for debugging
-        console.error('❌ Exception while recording click:', {
+        console.error('❌ Exception while creating referral session:', {
           error: err,
           message: err instanceof Error ? err.message : String(err),
           stack: err instanceof Error ? err.stack : undefined,
           affiliateId,
           programId,
         });
-        // Don't block redirect if click recording fails
+        // Don't block redirect if session creation fails
       }
 
-      // Step 3: Redirect to destination URL with ref parameter (only after insert attempt completes)
-      // Add ref parameter to track the affiliate
+      // Step 3: Redirect to destination URL with session token (not affiliate_id)
+      // This is more secure and privacy-friendly
       try {
         const destinationUrl = new URL(vendorData.destination_url);
-        destinationUrl.searchParams.set('ref', affiliateId);
+        destinationUrl.searchParams.set('session', sessionToken);
         window.location.href = destinationUrl.toString();
       } catch (urlError) {
-        // If URL parsing fails (e.g., relative URL), append ref parameter manually
+        // If URL parsing fails (e.g., relative URL), append session parameter manually
         const separator = vendorData.destination_url.includes('?') ? '&' : '?';
-        window.location.href = `${vendorData.destination_url}${separator}ref=${affiliateId}`;
+        window.location.href = `${vendorData.destination_url}${separator}session=${sessionToken}`;
       }
     } catch (err) {
       console.error('Redirect error:', err);
@@ -101,7 +111,6 @@ export default function TrackingLinkPage() {
   if (isLoading && !error) {
     return (
       <div className="min-h-screen bg-black text-white flex items-center justify-center px-4 relative">
-        <GridBackground />
         <div className="w-full max-w-md relative z-10 text-center">
           <div className="bg-black/80 backdrop-blur-xl border border-gray-800 rounded-lg p-8">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
@@ -116,7 +125,6 @@ export default function TrackingLinkPage() {
   if (error) {
     return (
       <div className="min-h-screen bg-black text-white flex items-center justify-center px-4 relative">
-        <GridBackground />
         <div className="w-full max-w-md relative z-10">
           <div className="bg-black/80 backdrop-blur-xl border border-gray-800 rounded-lg p-8 text-center">
             <div className="mb-4">

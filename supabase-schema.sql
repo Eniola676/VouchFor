@@ -20,6 +20,7 @@ CREATE TABLE IF NOT EXISTS vendors (
   cooling_off_period INTEGER NOT NULL DEFAULT 30,
   payout_schedule TEXT NOT NULL CHECK (payout_schedule IN ('monthly_1st', 'net_15', 'net_30', 'upon_request')),
   payout_method TEXT NOT NULL CHECK (payout_method IN ('bank_transfer', 'other')),
+  manual_arrangement_details TEXT, -- Details about manual payout arrangement when payout_method is "other"
   minimum_payout_threshold TEXT NOT NULL DEFAULT '10000',
   transaction_fees TEXT NOT NULL CHECK (transaction_fees IN ('vendor', 'affiliate')),
   

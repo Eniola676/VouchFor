@@ -12,3 +12,10 @@ CREATE INDEX IF NOT EXISTS idx_vendors_public_key ON vendors(public_key);
 COMMENT ON COLUMN vendors.public_key IS 'Public key for destination tracking API authentication';
 
 
+
+
+
+
+
+
+

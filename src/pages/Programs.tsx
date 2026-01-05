@@ -2,12 +2,11 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { VendorSidebar } from '../components/VendorSidebar';
 import DashboardHeader from '../components/DashboardHeader';
-import { GridBackground } from '../components/ui/grid-background';
 import CommissionCalculator from '../components/CommissionCalculator';
 import OfferSetupForm from '../components/OfferSetupForm';
 import { supabase } from '../lib/supabase';
 import { cn } from '../lib/utils';
-import { ExternalLink, Calendar, DollarSign, Users, Plus, X } from 'lucide-react';
+import { DollarSign, Users, Plus, X, Copy, Check } from 'lucide-react';
 import Button from '../components/ui/Button';
 
 interface VendorProgram {
@@ -21,6 +20,8 @@ interface VendorProgram {
   is_active: boolean;
   created_at: string;
   published_at: string | null;
+  partners_count?: number;
+  revenue?: number;
 }
 
 interface CalculationResults {
@@ -40,6 +41,7 @@ export default function Programs() {
   const [error, setError] = useState<string | null>(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [calculationResults, setCalculationResults] = useState<CalculationResults | null>(null);
+  const [copiedUrl, setCopiedUrl] = useState<string | null>(null);
   const showForm = calculationResults && !calculationResults.error;
 
   useEffect(() => {
@@ -86,7 +88,42 @@ export default function Programs() {
       }
 
       console.log('Fetched programs:', data?.length || 0, 'programs');
-      setPrograms(data || []);
+      
+      // Fetch partners count and revenue for each program
+      const programsData: VendorProgram[] = (data || []) as VendorProgram[];
+      if (programsData && programsData.length > 0) {
+        const programsWithStats = await Promise.all(
+          programsData.map(async (program) => {
+            // Get partners count
+            const { count: partnersCount } = await supabase
+              .from('affiliate_programs')
+              .select('*', { count: 'exact', head: true })
+              .eq('vendor_id', program.id)
+              .eq('status', 'active');
+
+            // Get revenue (sum of commission_amount from paid and pending commissions)
+            const { data: referralsData } = await supabase
+              .from('referrals')
+              .select('commission_amount')
+              .eq('vendor_id', program.id)
+              .in('status', ['paid_commission', 'pending_commission']);
+
+            const revenue = referralsData?.reduce((sum: number, ref: { commission_amount: string | number }) => {
+              return sum + parseFloat(ref.commission_amount.toString() || '0');
+            }, 0) || 0;
+
+            return {
+              ...program,
+              partners_count: partnersCount || 0,
+              revenue: revenue,
+            };
+          })
+        );
+
+        setPrograms(programsWithStats);
+      } else {
+        setPrograms([]);
+      }
     } catch (err) {
       console.error('Error fetching programs:', err);
       setError(err instanceof Error ? err.message : 'Failed to load programs');
@@ -95,12 +132,18 @@ export default function Programs() {
     }
   };
 
-  const formatCommission = (program: VendorProgram) => {
-    if (program.commission_type === 'percentage') {
-      return `${program.commission_value}%`;
-    } else {
-      return `$${parseFloat(program.commission_value).toLocaleString()}`;
+  const copyToClipboard = async (url: string, programId: string) => {
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopiedUrl(programId);
+      setTimeout(() => setCopiedUrl(null), 2000);
+    } catch (err) {
+      console.error('Failed to copy:', err);
     }
+  };
+
+  const formatRevenue = (revenue: number) => {
+    return `$${revenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   };
 
   return (
@@ -108,8 +151,6 @@ export default function Programs() {
       "flex flex-col w-full min-h-screen bg-black",
       "relative"
     )}>
-      <GridBackground />
-      
       {/* Top Header Bar */}
       <div className="relative z-20">
         <DashboardHeader />
@@ -229,33 +270,44 @@ export default function Programs() {
 
                     <div className="space-y-3 mb-4">
                       <div className="flex items-center gap-2 text-sm">
-                        <DollarSign className="w-4 h-4 text-gray-400" />
+                        <Users className="w-4 h-4 text-gray-400" />
                         <span className="text-gray-300">
-                          Commission: <span className="text-white font-medium">{formatCommission(program)}</span>
+                          Partners: <span className="text-white font-medium">{program.partners_count || 0}</span>
                         </span>
                       </div>
                       <div className="flex items-center gap-2 text-sm">
-                        <Calendar className="w-4 h-4 text-gray-400" />
+                        <DollarSign className="w-4 h-4 text-gray-400" />
                         <span className="text-gray-300">
-                          Cookie: <span className="text-white font-medium">{program.cookie_duration} days</span>
+                          Revenue: <span className="text-white font-medium">{formatRevenue(program.revenue || 0)}</span>
                         </span>
                       </div>
                     </div>
 
                     <div className="flex gap-2 pt-4 border-t border-gray-800">
-                      <Link
-                        to={`/p/${program.vendor_slug}`}
-                        target="_blank"
+                      <button
+                        onClick={() => {
+                          const url = `${window.location.origin}/p/${program.vendor_slug}`;
+                          copyToClipboard(url, program.id);
+                        }}
                         className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-gray-900/50 hover:bg-gray-800 border border-gray-700 rounded-md text-sm text-white transition"
                       >
-                        <ExternalLink className="w-4 h-4" />
-                        View Page
-                      </Link>
+                        {copiedUrl === program.id ? (
+                          <>
+                            <Check className="w-4 h-4" />
+                            Copied
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="w-4 h-4" />
+                            Copy URL
+                          </>
+                        )}
+                      </button>
                       <Link
                         to={`/programs/${program.vendor_slug}/edit`}
                         className="flex-1 px-3 py-2 bg-gray-900/50 hover:bg-gray-800 border border-gray-700 rounded-md text-sm text-white text-center transition"
                       >
-                        Edit
+                        Program Details
                       </Link>
                     </div>
                   </div>

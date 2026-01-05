@@ -36,17 +36,21 @@ export default function CommissionsTable() {
 
   const getStatusBadge = (status: string) => {
     const statusConfig = {
-      paid_commission: {
-        label: 'Paid',
-        className: 'bg-emerald-900/30 text-emerald-400 border-emerald-800',
-      },
       pending_commission: {
         label: 'Pending',
         className: 'bg-yellow-900/30 text-yellow-400 border-yellow-800',
       },
+      approved_commission: {
+        label: 'Approved',
+        className: 'bg-blue-900/30 text-blue-400 border-blue-800',
+      },
+      paid_commission: {
+        label: 'Paid',
+        className: 'bg-emerald-900/30 text-emerald-400 border-emerald-800',
+      },
       signup: {
         label: 'Signup',
-        className: 'bg-blue-900/30 text-blue-400 border-blue-800',
+        className: 'bg-gray-900/30 text-gray-400 border-gray-800',
       },
       click: {
         label: 'Click',
@@ -114,6 +118,13 @@ export default function CommissionsTable() {
     </div>
   );
 }
+
+
+
+
+
+
+
 
 
 

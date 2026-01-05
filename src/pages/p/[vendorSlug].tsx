@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Check } from 'lucide-react';
 import { OfferSetupFormData, useOfferData } from '../../contexts/OfferDataContext';
-import { GridBackground } from '../../components/ui/grid-background';
 import { supabase } from '../../lib/supabase';
 
 interface PartnerRecruitmentPageProps {
@@ -169,7 +168,6 @@ export default function PartnerRecruitmentPage(props?: PartnerRecruitmentPagePro
   if (loading) {
     return (
       <div className="min-h-screen bg-black text-white relative">
-        <GridBackground />
         <div className="relative z-10 flex items-center justify-center min-h-screen">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
@@ -184,7 +182,6 @@ export default function PartnerRecruitmentPage(props?: PartnerRecruitmentPagePro
   if (error && !propOfferData) {
     return (
       <div className="min-h-screen bg-black text-white relative">
-        <GridBackground />
         <div className="relative z-10 flex items-center justify-center min-h-screen">
           <div className="text-center">
             <h1 className="text-2xl font-semibold text-white mb-2">Program Not Found</h1>
@@ -200,7 +197,6 @@ export default function PartnerRecruitmentPage(props?: PartnerRecruitmentPagePro
 
   return (
     <div className="min-h-screen bg-black text-white relative">
-      <GridBackground />
       <div className="relative z-10">
         {/* Header Section - Branding & Trust */}
         <header className="border-b border-gray-800">

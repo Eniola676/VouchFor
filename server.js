@@ -15,7 +15,10 @@
 import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
-import { handleTrackEvent } from './server/api-track.js';
+import { handleConversionHint, handleSessionValidation } from './server/api-track.js';
+import { handleStripeWebhook } from './server/webhooks/stripe.js';
+import { attributeConversion } from './server/services/attribution.js';
+import { calculateCommission } from './server/services/commission.js';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -33,17 +36,19 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', service: 'vouchfor-api' });
 });
 
-// Tracking endpoint (Destination Tracking)
-app.post('/api/track', handleTrackEvent);
+// Session-based tracking endpoints
+app.post('/api/track/conversion', handleConversionHint);
+app.get('/api/track/session/:token', handleSessionValidation);
 
-// Legacy endpoint for backward compatibility
-app.post('/api/track/event', handleTrackEvent);
+// Webhook endpoints (authoritative for conversions)
+app.post('/api/webhooks/stripe', handleStripeWebhook);
+// Add PayPal webhook handler here when needed
 
 // Start server
 app.listen(PORT, () => {
   console.log(`VouchFor API server running on port ${PORT}`);
-  console.log(`Hybrid Tracking endpoint: http://localhost:${PORT}/api/track`);
-  console.log(`  - Accepts: { event: 'click' | 'sale', ref_id: '...', program_id: '...' }`);
-  console.log(`Legacy endpoint: http://localhost:${PORT}/api/track/event`);
+  console.log(`Conversion hint endpoint: POST http://localhost:${PORT}/api/track/conversion`);
+  console.log(`Session validation: GET http://localhost:${PORT}/api/track/session/:token`);
+  console.log(`Stripe webhook: POST http://localhost:${PORT}/api/webhooks/stripe`);
 });
 

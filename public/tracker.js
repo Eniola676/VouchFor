@@ -1,12 +1,12 @@
 /**
- * VouchFor Hybrid Click and Sale Tracking SDK
+ * VouchFor Session-Based Tracking SDK
  * 
- * Idempotent tracking script for vendor websites.
- * Implements both click tracking (on page load) and sale tracking.
+ * Tracks referral sessions using session tokens (not affiliate IDs).
+ * Conversion events are advisory - webhooks are authoritative.
  * 
  * Usage:
  * 1. Include this script: <script src="https://your-domain.com/tracker.js"></script>
- * 2. Track sales: window.vouchfor('track', 'sale', { program_id: '...' })
+ * 2. Track conversions (advisory): window.vouchfor('track', 'conversion', { conversion_id: '...', amount: 99.00 })
  */
 
 (function() {
@@ -19,13 +19,7 @@
   window.vouchforInitialized = true;
 
   // Storage configuration
-  const STORAGE_KEY = 'vouchfor_ref_id';
-  const STORAGE_EXPIRY_KEY = 'vouchfor_ref_id_expiry';
-  const STORAGE_EXPIRY_DAYS = 60; // 60 days expiry
-
-  // API endpoint - can be configured via window.VOUCHFOR_API_ENDPOINT
-  // Defaults to same origin if not specified (for same-domain deployments)
-  // For external vendor sites, set: window.VOUCHFOR_API_ENDPOINT = 'http://localhost:3001/api/track'
+  const STORAGE_KEY = 'vouchfor_session';
   const API_ENDPOINT = window.VOUCHFOR_API_ENDPOINT || '/api/track';
 
   /**
@@ -39,43 +33,41 @@
   }
 
   /**
-   * Check if stored ref_id is expired
+   * Check if stored session is expired
    */
-  function isExpired(expiryTimestamp) {
-    if (!expiryTimestamp) return true;
-    return Date.now() > parseInt(expiryTimestamp, 10);
+  function isSessionExpired(session) {
+    if (!session || !session.expires_at) return true;
+    return Date.now() > new Date(session.expires_at).getTime();
   }
 
   /**
-   * Get stored referral ID from LocalStorage
+   * Get stored session from LocalStorage
    */
-  function getStoredRefId() {
+  function getStoredSession() {
     try {
-      var storedRef = localStorage.getItem(STORAGE_KEY);
-      var storedExpiry = localStorage.getItem(STORAGE_EXPIRY_KEY);
+      var stored = localStorage.getItem(STORAGE_KEY);
+      if (!stored) return null;
       
-      if (storedRef && !isExpired(storedExpiry)) {
-        return storedRef;
-      } else if (storedRef && isExpired(storedExpiry)) {
-        // Clean up expired data
+      var session = JSON.parse(stored);
+      if (isSessionExpired(session)) {
+        // Clean up expired session
         localStorage.removeItem(STORAGE_KEY);
-        localStorage.removeItem(STORAGE_EXPIRY_KEY);
+        return null;
       }
+      return session;
     } catch (e) {
       console.warn('VouchFor: Error reading localStorage', e);
+      return null;
     }
-    return null;
   }
 
   /**
-   * Save referral ID to LocalStorage with expiry
+   * Save session to LocalStorage
    */
-  function saveRefId(refId) {
+  function saveSession(session) {
     try {
-      var expiryTimestamp = Date.now() + (STORAGE_EXPIRY_DAYS * 24 * 60 * 60 * 1000);
-      localStorage.setItem(STORAGE_KEY, refId);
-      localStorage.setItem(STORAGE_EXPIRY_KEY, expiryTimestamp.toString());
-      console.log('VouchFor: Referral ID saved:', refId);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(session));
+      console.log('VouchFor: Session saved:', session.token);
       return true;
     } catch (e) {
       console.warn('VouchFor: Could not save to localStorage', e);
@@ -84,19 +76,21 @@
   }
 
   /**
-   * Send tracking event to API
+   * Send conversion hint to API (advisory only)
+   * Webhooks are authoritative for actual conversions
    */
-  function sendTrackingEvent(event, refId, programId) {
+  function sendConversionHint(sessionToken, conversionId, amount) {
     var payload = {
-      event: event,
-      ref_id: refId,
-      program_id: programId || null,
+      event: 'conversion_hint',
+      session_token: sessionToken,
+      conversion_id: conversionId || null,
+      amount: amount || null,
       timestamp: new Date().toISOString(),
       url: window.location.href,
       user_agent: navigator.userAgent,
     };
 
-    return fetch(API_ENDPOINT, {
+    return fetch(API_ENDPOINT + '/conversion', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -110,68 +104,91 @@
       return response.json();
     })
     .then(function(data) {
-      console.log('VouchFor: ' + event + ' tracked successfully', data);
+      console.log('VouchFor: Conversion hint sent (webhook is authoritative)', data);
       return data;
     })
     .catch(function(error) {
-      console.error('VouchFor: Error tracking ' + event, error);
-      throw error;
+      console.warn('VouchFor: Error sending conversion hint (non-blocking):', error);
+      // Don't throw - this is advisory only
+      return { error: error.message };
     });
   }
 
   /**
-   * Track click event
-   * Called automatically when ?ref= is detected in URL
+   * Track conversion (advisory)
+   * Called manually via window.vouchfor('track', 'conversion', { conversion_id: '...', amount: 99.00 })
    */
-  function trackClick(refId, programId) {
-    if (!refId) {
-      console.warn('VouchFor: No ref_id provided for click tracking');
-      return Promise.reject(new Error('No ref_id provided'));
-    }
-
-    // Send click event to API
-    // Note: program_id is optional for clicks but recommended
-    return sendTrackingEvent('click', refId, programId)
-      .catch(function(error) {
-        // Don't block page load if click tracking fails
-        console.warn('VouchFor: Click tracking failed (non-blocking):', error);
-      });
-  }
-
-  /**
-   * Track sale event
-   * Called manually via window.vouchfor('track', 'sale', { program_id: '...' })
-   */
-  function trackSale(programId) {
-    var refId = getStoredRefId();
+  function trackConversion(options) {
+    var session = getStoredSession();
     
-    if (!refId) {
-      console.warn('VouchFor: No referral ID found. User must visit via tracking link first.');
-      return Promise.reject(new Error('No referral ID found'));
+    if (!session || !session.token) {
+      console.warn('VouchFor: No valid session found. User must visit via tracking link first.');
+      return Promise.resolve({ 
+        received: false, 
+        message: 'No valid session found. Webhook will handle conversion if payment succeeds.' 
+      });
     }
 
-    if (!programId) {
-      console.warn('VouchFor: program_id is required for sale tracking');
-      return Promise.reject(new Error('program_id is required'));
-    }
+    var conversionId = options && options.conversion_id ? options.conversion_id : null;
+    var amount = options && options.amount ? options.amount : null;
 
-    return sendTrackingEvent('sale', refId, programId);
+    // Send advisory conversion hint
+    return sendConversionHint(session.token, conversionId, amount);
   }
 
   /**
-   * Initialize: Check for ?ref= in URL
-   * If found, send click event immediately, then save to LocalStorage
+   * Validate session token with server
+   */
+  function validateSession(sessionToken) {
+    return fetch(API_ENDPOINT + '/session/' + sessionToken, {
+      method: 'GET',
+    })
+    .then(function(response) {
+      if (!response.ok) {
+        throw new Error('Session validation failed: ' + response.status);
+      }
+      return response.json();
+    })
+    .catch(function(error) {
+      console.warn('VouchFor: Session validation failed (non-blocking):', error);
+      return null;
+    });
+  }
+
+  /**
+   * Initialize: Check for ?session= in URL
+   * If found, save session token to LocalStorage
    */
   function initialize() {
-    var refParam = getUrlParameter('ref');
-    var programIdParam = getUrlParameter('program_id'); // Optional program_id from URL
+    var sessionParam = getUrlParameter('session');
     
-    if (refParam) {
-      // Save to LocalStorage first
-      saveRefId(refParam);
+    if (sessionParam) {
+      // Calculate expiry (default 60 days, but should match server-side)
+      var expiresAt = new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString();
       
-      // Send click event immediately (non-blocking)
-      trackClick(refParam, programIdParam);
+      var session = {
+        token: sessionParam,
+        expires_at: expiresAt,
+        created_at: new Date().toISOString()
+      };
+      
+      // Save to LocalStorage
+      saveSession(session);
+      
+      // Optionally validate with server (non-blocking)
+      validateSession(sessionParam).then(function(validation) {
+        if (validation && validation.expires_at) {
+          // Update expiry from server if provided
+          session.expires_at = validation.expires_at;
+          saveSession(session);
+        }
+      });
+    } else {
+      // Check for existing valid session
+      var existingSession = getStoredSession();
+      if (existingSession) {
+        console.log('VouchFor: Using existing session:', existingSession.token);
+      }
     }
   }
 
@@ -182,16 +199,18 @@
     initialize();
   }
 
-  // Expose global function: window.vouchfor('track', 'sale', { program_id: '...' })
+  // Expose global function: window.vouchfor('track', 'conversion', { conversion_id: '...', amount: 99.00 })
   window.vouchfor = function(command, eventType, options) {
-    if (command === 'track' && eventType === 'sale') {
-      var programId = options && options.program_id ? options.program_id : null;
-      return trackSale(programId);
+    if (command === 'track' && eventType === 'conversion') {
+      return trackConversion(options);
     } else {
-      console.warn('VouchFor: Unknown command or event type. Use: vouchfor("track", "sale", { program_id: "..." })');
-      return Promise.reject(new Error('Unknown command or event type'));
+      console.warn('VouchFor: Unknown command. Use: vouchfor("track", "conversion", { conversion_id: "...", amount: 99.00 })');
+      return Promise.resolve({ 
+        received: false, 
+        message: 'Unknown command. Webhook will handle conversion if payment succeeds.' 
+      });
     }
   };
 
-  console.log('VouchFor: Hybrid Click and Sale Tracking SDK loaded');
+  console.log('VouchFor: Session-Based Tracking SDK loaded');
 })();

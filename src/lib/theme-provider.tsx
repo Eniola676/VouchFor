@@ -52,6 +52,13 @@ export function ThemeProvider({
       root.classList.add(theme)
       setResolvedTheme(theme)
     }
+    
+    // Ensure body also gets the theme class for consistency
+    document.body.classList.remove('light', 'dark')
+    const finalTheme = theme === 'system' 
+      ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+      : theme
+    document.body.classList.add(finalTheme)
   }, [theme])
 
   useEffect(() => {
@@ -68,12 +75,14 @@ export function ThemeProvider({
     }
   }, [theme])
 
+  const updateTheme = (newTheme: Theme) => {
+    localStorage.setItem(storageKey, newTheme)
+    setTheme(newTheme)
+  }
+
   const value = {
     theme,
-    setTheme: (theme: Theme) => {
-      localStorage.setItem(storageKey, theme)
-      setTheme(theme)
-    },
+    setTheme: updateTheme,
     resolvedTheme,
   }
 

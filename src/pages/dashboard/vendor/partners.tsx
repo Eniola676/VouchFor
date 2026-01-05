@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { VendorSidebar } from '@/components/VendorSidebar';
 import DashboardHeader from '@/components/DashboardHeader';
-import { GridBackground } from '@/components/ui/grid-background';
 import { supabase } from '@/lib/supabase';
 import { cn } from '@/lib/utils';
 import { Loader2, Users } from 'lucide-react';
@@ -182,8 +181,6 @@ export default function PartnersPage() {
 
   return (
     <div className={cn("flex flex-col w-full min-h-screen bg-black", "relative")}>
-      <GridBackground />
-      
       {/* Top Header Bar */}
       <div className="relative z-20">
         <DashboardHeader />

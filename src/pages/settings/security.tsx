@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { VendorSidebar } from '@/components/VendorSidebar';
 import DashboardHeader from '@/components/DashboardHeader';
-import { GridBackground } from '@/components/ui/grid-background';
 import { supabase } from '@/lib/supabase';
 import { cn } from '@/lib/utils';
 import { Shield, Lock, Key, Smartphone, ArrowLeft, Check, X } from 'lucide-react';
@@ -100,7 +99,6 @@ export default function SecurityPage() {
   if (loading) {
     return (
       <div className={cn("flex flex-col w-full min-h-screen", "relative")}>
-        <GridBackground />
         <div className="relative z-20">
           <DashboardHeader />
         </div>
@@ -113,8 +111,6 @@ export default function SecurityPage() {
 
   return (
     <div className={cn("flex flex-col w-full min-h-screen bg-black", "relative")}>
-      <GridBackground />
-      
       {/* Top Header Bar */}
       <div className="relative z-20">
         <DashboardHeader />

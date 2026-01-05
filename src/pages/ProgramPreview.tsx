@@ -1,7 +1,6 @@
 import { useOfferData } from '../contexts/OfferDataContext';
 import OfferSetupForm from '../components/OfferSetupForm';
 import PartnerRecruitmentPage from './p/[vendorSlug]';
-import { GridBackground } from '../components/ui/grid-background';
 import { cn } from '../lib/utils';
 
 export default function ProgramPreview() {
@@ -15,7 +14,6 @@ export default function ProgramPreview() {
 
   return (
     <div className="min-h-screen bg-black relative">
-      <GridBackground />
       <div className={cn(
         "flex flex-col lg:flex-row h-screen overflow-hidden relative z-10"
       )}>

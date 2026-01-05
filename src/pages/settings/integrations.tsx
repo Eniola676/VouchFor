@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { VendorSidebar } from '@/components/VendorSidebar';
 import DashboardHeader from '@/components/DashboardHeader';
-import { GridBackground } from '@/components/ui/grid-background';
 import { supabase } from '@/lib/supabase';
 import { cn } from '@/lib/utils';
 import { Check, Copy, Globe, Play, AlertCircle, CheckCircle2, XCircle, Loader2 } from 'lucide-react';
@@ -174,17 +173,33 @@ export default function IntegrationsPage() {
 
   const globalScriptCode = `<script src="${trackerScriptUrl}"></script>`;
 
-  const thankYouPageCode = selectedProgram 
-    ? `// On your thank you / confirmation page
-vouchfor('track', 'sale', {
-  program_id: '${selectedProgram.id}'
+  const stripeCode = selectedProgram 
+    ? `// When creating a Stripe Payment Intent
+const paymentIntent = await stripe.paymentIntents.create({
+  amount: 2000, // $20.00 in cents
+  currency: 'usd',
+  metadata: {
+    vendor_id: '${selectedProgram.id}' // Required: Your program ID
+  }
+});`
+    : '';
+
+  const paypalCode = selectedProgram 
+    ? `// When creating a PayPal order
+const order = await paypal.orders.create({
+  intent: 'CAPTURE',
+  purchase_units: [{
+    amount: {
+      currency_code: 'USD',
+      value: '20.00'
+    },
+    custom_id: '${selectedProgram.id}' // Required: Your program ID
+  }]
 });`
     : '';
 
   return (
     <div className={cn("flex flex-col w-full min-h-screen bg-black", "relative")}>
-      <GridBackground />
-      
       {/* Top Header Bar */}
       <div className="relative z-20">
         <DashboardHeader />
@@ -240,7 +255,7 @@ vouchfor('track', 'sale', {
                   <div className="flex items-center justify-between mb-4">
                     <h2 className="text-lg font-semibold text-white flex items-center gap-2">
                       <span className="w-8 h-8 rounded-full bg-primary-600/20 flex items-center justify-center text-primary-400 font-bold text-sm">1</span>
-                      <span>Add Global Script</span>
+                      <span>Add Tracking Script to Your Website</span>
                     </h2>
                     <button
                       onClick={checkInstallation}
@@ -265,13 +280,17 @@ vouchfor('track', 'sale', {
                     <div className="mb-4 p-3 bg-primary-900/20 border border-primary-800 rounded-md">
                       <p className="text-sm text-primary-300">
                         <AlertCircle className="w-4 h-4 inline mr-2" />
-                        If you've already added this header code for another program, you can skip Step 1.
+                        <strong>Already added this?</strong> If you've already added this script for another program, you can skip this step.
                       </p>
                     </div>
                   )}
 
+                  <p className="text-sm text-gray-400 mb-3">
+                    <strong>What this does:</strong> This script helps us track when visitors come from affiliate links. It needs to be on every page of your website.
+                  </p>
+
                   <p className="text-sm text-gray-400 mb-4">
-                    Add this script to every page of your website, ideally before the closing <code className="text-gray-500">&lt;/body&gt;</code> tag:
+                    <strong>How to add it:</strong> Copy the code below and ask your web developer to add it to your website's template (usually in the header or footer, before the closing <code className="text-gray-500">&lt;/body&gt;</code> tag). If you're using WordPress, Shopify, or another platform, you can usually add this in your theme settings.
                   </p>
                   
                   <CodeBlock code={globalScriptCode} id="global-script" />
@@ -291,31 +310,158 @@ vouchfor('track', 'sale', {
                   )}
                 </div>
 
-                {/* Step 2: Thank You Page Code */}
+                {/* Step 2: Payment Integration */}
                 <div className="bg-black/80 backdrop-blur-xl border border-gray-800 rounded-lg p-6">
                   <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
                     <span className="w-8 h-8 rounded-full bg-primary-600/20 flex items-center justify-center text-primary-400 font-bold text-sm">2</span>
-                    <span>Add to Thank You Page</span>
+                    <span>Configure Payment Processor</span>
                   </h2>
                   
                   <p className="text-sm text-gray-400 mb-4">
-                    Add this code to your thank you / confirmation page after a successful sale or conversion:
+                    When a customer makes a payment, you need to tell Stripe or PayPal which program this sale belongs to. Copy the code below and add it to your checkout code where you create payments.
                   </p>
-                  
-                  <CodeBlock code={thankYouPageCode} language="javascript" id="thank-you-code" />
 
-                  <div className="mt-4 p-3 bg-gray-900/50 border border-gray-700 rounded-md">
-                    <p className="text-xs text-gray-400">
-                      The <code className="text-gray-500">program_id</code> is already set for this program: <code className="text-gray-500">{selectedProgram.id}</code>
+                  <div className="mb-4 p-3 bg-primary-900/20 border border-primary-800 rounded-md">
+                    <p className="text-xs text-primary-300">
+                      <AlertCircle className="w-4 h-4 inline mr-2" />
+                      <strong>Your Program ID:</strong> <code className="text-primary-200 font-mono">{selectedProgram.id}</code>
                     </p>
+                    <p className="text-xs text-primary-300/80 mt-1">
+                      You'll need this ID in the code below. If you're not sure where to add this code, ask your developer to help.
+                    </p>
+                  </div>
+
+                  {/* Stripe Integration */}
+                  <div className="mb-6">
+                    <h3 className="text-sm font-semibold text-white mb-2 flex items-center gap-2">
+                      <span className="text-primary-400">For Stripe Users</span>
+                    </h3>
+                    <p className="text-xs text-gray-400 mb-2">
+                      Copy this code and add it to your Stripe payment code. Replace the example amount with your actual price:
+                    </p>
+                    <CodeBlock code={stripeCode} language="javascript" id="stripe-code" />
+                    <div className="mt-3 p-3 bg-blue-900/20 border border-blue-800 rounded-md">
+                      <p className="text-xs text-blue-300 mb-1">
+                        <strong>What this does:</strong> When someone pays, Stripe will include your program ID so we can track the sale.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* PayPal Integration */}
+                  <div>
+                    <h3 className="text-sm font-semibold text-white mb-2 flex items-center gap-2">
+                      <span className="text-primary-400">For PayPal Users</span>
+                    </h3>
+                    <p className="text-xs text-gray-400 mb-2">
+                      Copy this code and add it to your PayPal order code. Replace the example amount with your actual price:
+                    </p>
+                    <CodeBlock code={paypalCode} language="javascript" id="paypal-code" />
+                    <div className="mt-3 p-3 bg-blue-900/20 border border-blue-800 rounded-md">
+                      <p className="text-xs text-blue-300 mb-1">
+                        <strong>What this does:</strong> When someone pays, PayPal will include your program ID so we can track the sale.
+                      </p>
+                    </div>
                   </div>
                 </div>
 
-                {/* Step 3: Validation & Listening */}
+                {/* Step 3: Webhook Configuration */}
+                <div className="bg-black/80 backdrop-blur-xl border border-gray-800 rounded-lg p-6">
+                  <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                    <span className="w-8 h-8 rounded-full bg-primary-600/20 flex items-center justify-center text-primary-400 font-bold text-sm">3</span>
+                    <span>Configure Webhooks</span>
+                  </h2>
+                  
+                  <p className="text-sm text-gray-400 mb-4">
+                    A webhook is like a notification system. When someone completes a payment, Stripe or PayPal will automatically notify us. This way, we can track sales without needing any code on your thank you page!
+                  </p>
+
+                  <div className="space-y-4">
+                    <div className="p-4 bg-gray-900/50 border border-gray-700 rounded-md">
+                      <h3 className="text-sm font-semibold text-white mb-3">Stripe Setup (Step by Step)</h3>
+                      <ol className="text-xs text-gray-400 space-y-2 mb-3 list-decimal list-inside">
+                        <li>Go to your <a href="https://dashboard.stripe.com/webhooks" target="_blank" rel="noopener noreferrer" className="text-primary-400 hover:underline">Stripe Dashboard → Webhooks</a></li>
+                        <li>Click "Add endpoint" or "Add webhook endpoint"</li>
+                        <li>Paste this URL in the endpoint field:</li>
+                      </ol>
+                      <div className="mb-3">
+                        <code className="text-xs text-primary-300 block bg-gray-950 p-3 rounded border border-gray-800 break-all">
+                          {typeof window !== 'undefined' ? `${window.location.origin}/api/webhooks/stripe` : 'https://your-domain.com/api/webhooks/stripe'}
+                        </code>
+                        <button
+                          onClick={() => copyToClipboard(typeof window !== 'undefined' ? `${window.location.origin}/api/webhooks/stripe` : 'https://your-domain.com/api/webhooks/stripe', 'stripe-webhook-url')}
+                          className="mt-2 text-xs text-primary-400 hover:text-primary-300 flex items-center gap-1"
+                        >
+                          {copied === 'stripe-webhook-url' ? (
+                            <>
+                              <Check className="w-3 h-3" />
+                              <span>Copied!</span>
+                            </>
+                          ) : (
+                            <>
+                              <Copy className="w-3 h-3" />
+                              <span>Copy URL</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
+                      <ol className="text-xs text-gray-400 space-y-2 list-decimal list-inside" start={4}>
+                        <li>Under "Events to send", select these two events:
+                          <ul className="list-disc list-inside ml-4 mt-1 space-y-1">
+                            <li><code className="text-gray-500">payment_intent.succeeded</code></li>
+                            <li><code className="text-gray-500">charge.refunded</code></li>
+                          </ul>
+                        </li>
+                        <li>Click "Add endpoint" to save</li>
+                      </ol>
+                    </div>
+
+                    <div className="p-4 bg-gray-900/50 border border-gray-700 rounded-md">
+                      <h3 className="text-sm font-semibold text-white mb-3">PayPal Setup (Step by Step)</h3>
+                      <ol className="text-xs text-gray-400 space-y-2 mb-3 list-decimal list-inside">
+                        <li>Go to your <a href="https://developer.paypal.com/dashboard" target="_blank" rel="noopener noreferrer" className="text-primary-400 hover:underline">PayPal Developer Dashboard</a></li>
+                        <li>Navigate to your app → Webhooks section</li>
+                        <li>Click "Add webhook"</li>
+                        <li>Paste this URL in the webhook URL field:</li>
+                      </ol>
+                      <div className="mb-3">
+                        <code className="text-xs text-primary-300 block bg-gray-950 p-3 rounded border border-gray-800 break-all">
+                          {typeof window !== 'undefined' ? `${window.location.origin}/api/webhooks/paypal` : 'https://your-domain.com/api/webhooks/paypal'}
+                        </code>
+                        <button
+                          onClick={() => copyToClipboard(typeof window !== 'undefined' ? `${window.location.origin}/api/webhooks/paypal` : 'https://your-domain.com/api/webhooks/paypal', 'paypal-webhook-url')}
+                          className="mt-2 text-xs text-primary-400 hover:text-primary-300 flex items-center gap-1"
+                        >
+                          {copied === 'paypal-webhook-url' ? (
+                            <>
+                              <Check className="w-3 h-3" />
+                              <span>Copied!</span>
+                            </>
+                          ) : (
+                            <>
+                              <Copy className="w-3 h-3" />
+                              <span>Copy URL</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
+                      <ol className="text-xs text-gray-400 space-y-2 list-decimal list-inside" start={5}>
+                        <li>Select these event types:
+                          <ul className="list-disc list-inside ml-4 mt-1 space-y-1">
+                            <li><code className="text-gray-500">PAYMENT.CAPTURE.COMPLETED</code></li>
+                            <li><code className="text-gray-500">PAYMENT.CAPTURE.REFUNDED</code></li>
+                          </ul>
+                        </li>
+                        <li>Click "Save" to finish</li>
+                      </ol>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Step 4: Validation & Listening */}
                 <div className="bg-black/80 backdrop-blur-xl border border-gray-800 rounded-lg p-6">
                   <div className="flex items-center justify-between mb-4">
                     <h2 className="text-lg font-semibold text-white flex items-center gap-2">
-                      <span className="w-8 h-8 rounded-full bg-primary-600/20 flex items-center justify-center text-primary-400 font-bold text-sm">3</span>
+                      <span className="w-8 h-8 rounded-full bg-primary-600/20 flex items-center justify-center text-primary-400 font-bold text-sm">4</span>
                       <span>Validate Installation</span>
                     </h2>
                     <button
@@ -343,17 +489,26 @@ vouchfor('track', 'sale', {
                   </div>
 
                   <p className="text-sm text-gray-400 mb-4">
-                    Click "Start Listening" to monitor for tracking events. The program will be marked as "Active" once we receive the first click or sale event.
+                    Use this tool to test if everything is working correctly. Click "Start Listening" and then test your setup by either:
+                  </p>
+
+                  <ul className="text-sm text-gray-400 mb-4 space-y-2 list-disc list-inside ml-2">
+                    <li>Visiting your website with an affiliate link (to test click tracking)</li>
+                    <li>Completing a test purchase (to test conversion tracking)</li>
+                  </ul>
+
+                  <p className="text-sm text-gray-400 mb-4">
+                    Once we receive your first tracking event, your program will automatically be marked as "Active" and you're all set!
                   </p>
 
                   {listening && (
                     <div className="mt-4 p-4 bg-gray-900/50 border border-gray-700 rounded-md">
                       <div className="flex items-center gap-2 mb-2">
                         <Loader2 className="w-4 h-4 animate-spin text-primary-400" />
-                        <span className="text-sm text-gray-300">Listening for events...</span>
+                        <span className="text-sm text-gray-300">Watching for events...</span>
                       </div>
                       <p className="text-xs text-gray-500">
-                        Test by visiting your site with ?ref= parameter (for clicks) or completing a sale (for sales). Events will appear here when detected.
+                        We're monitoring for clicks and sales. Try visiting your site with an affiliate link or complete a test purchase to see events appear here.
                       </p>
                     </div>
                   )}
@@ -385,52 +540,58 @@ vouchfor('track', 'sale', {
 
                 {/* How It Works */}
                 <div className="bg-black/80 backdrop-blur-xl border border-gray-800 rounded-lg p-6">
-                  <h2 className="text-lg font-semibold text-white mb-4">How Hybrid Click & Sale Tracking Works</h2>
-                  <div className="space-y-3">
+                  <h2 className="text-lg font-semibold text-white mb-4">How It Works (Simple Explanation)</h2>
+                  <div className="space-y-4">
                     <div className="flex items-start gap-3">
-                      <div className="w-6 h-6 rounded-full bg-primary-700 flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <div className="w-7 h-7 rounded-full bg-primary-700 flex items-center justify-center flex-shrink-0 mt-0.5">
                         <span className="text-xs font-bold text-white">1</span>
                       </div>
-                      <div>
-                        <h3 className="text-sm font-medium text-white mb-1">Affiliate shares tracking link</h3>
-                        <p className="text-sm text-gray-400">
-                          When someone clicks the affiliate's tracking link, they're redirected to your website with a <code className="text-gray-500">?ref=</code> parameter.
+                      <div className="flex-1">
+                        <h3 className="text-sm font-semibold text-white mb-1">Affiliate shares your link</h3>
+                        <p className="text-sm text-gray-400 leading-relaxed">
+                          An affiliate shares a special tracking link with their audience. When someone clicks it, they visit your website.
                         </p>
                       </div>
                     </div>
                     <div className="flex items-start gap-3">
-                      <div className="w-6 h-6 rounded-full bg-primary-700 flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <div className="w-7 h-7 rounded-full bg-primary-700 flex items-center justify-center flex-shrink-0 mt-0.5">
                         <span className="text-xs font-bold text-white">2</span>
                       </div>
-                      <div>
-                        <h3 className="text-sm font-medium text-white mb-1">Click is automatically tracked</h3>
-                        <p className="text-sm text-gray-400">
-                          The tracker script automatically detects the <code className="text-gray-500">?ref=</code> parameter, sends a click event to our API, and saves the referral ID for 60 days in the browser's localStorage.
+                      <div className="flex-1">
+                        <h3 className="text-sm font-semibold text-white mb-1">We remember the visitor</h3>
+                        <p className="text-sm text-gray-400 leading-relaxed">
+                          Our tracking script remembers that this visitor came from an affiliate. This information is saved for 60 days, so even if they come back later to buy, we'll know who referred them.
                         </p>
                       </div>
                     </div>
                     <div className="flex items-start gap-3">
-                      <div className="w-6 h-6 rounded-full bg-primary-700 flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <div className="w-7 h-7 rounded-full bg-primary-700 flex items-center justify-center flex-shrink-0 mt-0.5">
                         <span className="text-xs font-bold text-white">3</span>
                       </div>
-                      <div>
-                        <h3 className="text-sm font-medium text-white mb-1">Customer completes sale</h3>
-                        <p className="text-sm text-gray-400">
-                          When the customer completes a purchase, call <code className="text-gray-500">vouchfor('track', 'sale', {'{'} program_id: '...' {'}'})</code> on your thank you page.
+                      <div className="flex-1">
+                        <h3 className="text-sm font-semibold text-white mb-1">Customer makes a purchase</h3>
+                        <p className="text-sm text-gray-400 leading-relaxed">
+                          The visitor decides to buy something and completes checkout through Stripe or PayPal. Your payment processor automatically sends us a notification (webhook) about the sale.
                         </p>
                       </div>
                     </div>
                     <div className="flex items-start gap-3">
-                      <div className="w-6 h-6 rounded-full bg-primary-700 flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <div className="w-7 h-7 rounded-full bg-primary-700 flex items-center justify-center flex-shrink-0 mt-0.5">
                         <span className="text-xs font-bold text-white">4</span>
                       </div>
-                      <div>
-                        <h3 className="text-sm font-medium text-white mb-1">Sale is recorded</h3>
-                        <p className="text-sm text-gray-400">
-                          The sale is automatically recorded using the stored referral ID and appears in the affiliate's dashboard with pending commission status.
+                      <div className="flex-1">
+                        <h3 className="text-sm font-semibold text-white mb-1">Commission is automatically recorded</h3>
+                        <p className="text-sm text-gray-400 leading-relaxed">
+                          We match the sale to the affiliate who referred the customer, calculate their commission, and add it to their account. The affiliate can see this in their dashboard right away. No manual work needed!
                         </p>
                       </div>
                     </div>
+                  </div>
+                  
+                  <div className="mt-6 p-4 bg-primary-900/20 border border-primary-800 rounded-md">
+                    <p className="text-sm text-primary-300">
+                      <strong>✨ The Best Part:</strong> Everything happens automatically! Once you set up the webhook (Step 3), you don't need to add any code to your thank you page. Sales are tracked instantly when payments complete.
+                    </p>
                   </div>
                 </div>
               </>

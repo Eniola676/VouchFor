@@ -1,7 +1,6 @@
 import { AffiliateSidebar } from '@/components/AffiliateSidebar';
 import { VendorSidebar } from '@/components/VendorSidebar';
 import DashboardHeader from '@/components/DashboardHeader';
-import { GridBackground } from '@/components/ui/grid-background';
 import { HelpCircle, Mail, Send, MessageSquare } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useEffect, useState } from 'react';
@@ -42,7 +41,6 @@ export default function CustomerSupportPage() {
   if (loading) {
     return (
       <div className="flex flex-col w-full min-h-screen relative">
-        <GridBackground />
         <div className="relative z-20">
           <DashboardHeader />
         </div>
@@ -57,8 +55,6 @@ export default function CustomerSupportPage() {
 
   return (
     <div className={cn("flex flex-col w-full min-h-screen bg-black relative")}>
-      <GridBackground />
-      
       {/* Top Header Bar */}
       <div className="relative z-20">
         <DashboardHeader />

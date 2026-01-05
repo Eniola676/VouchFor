@@ -121,3 +121,10 @@ CREATE TRIGGER trigger_update_feedback_vote_counts
   FOR EACH ROW
   EXECUTE FUNCTION update_feedback_vote_counts();
 
+
+
+
+
+
+
+

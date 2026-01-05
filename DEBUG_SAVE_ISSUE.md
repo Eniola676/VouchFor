@@ -69,3 +69,10 @@ CREATE POLICY "Anyone can insert vendors"
 
 
 
+
+
+
+
+
+
+

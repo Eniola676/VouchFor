@@ -1,18 +1,17 @@
 /**
  * API Endpoint: /api/track
  * 
- * Hybrid Click and Sale Tracking API for VouchFor
- * Handles both click and sale events from tracker.js
+ * Session-Based Tracking API for VouchFor
+ * Handles conversion hints (advisory) and session validation.
+ * Webhooks are authoritative for actual conversions.
  * 
- * Request Body:
- * {
- *   "event": "click" | "sale",
- *   "ref_id": "affiliate-uuid",
- *   "program_id": "vendor-uuid" (optional for clicks, required for sales)
- * }
+ * Endpoints:
+ * - POST /api/track/conversion - Accepts conversion hints (advisory)
+ * - GET /api/track/session/:token - Validates session token
  */
 
 import { createClient } from '@supabase/supabase-js';
+import crypto from 'crypto';
 
 // Initialize Supabase client with service role key
 const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
@@ -32,117 +31,91 @@ const supabase = supabaseUrl && supabaseServiceKey
   : null;
 
 /**
- * Handle tracking event (click or sale)
+ * Generate idempotency key for conversions
  */
-export async function handleTrackEvent(req, res) {
+function generateIdempotencyKey(transactionId, vendorId) {
+  return crypto
+    .createHash('sha256')
+    .update(transactionId + '::' + vendorId)
+    .digest('hex');
+}
+
+/**
+ * Handle conversion hint (advisory)
+ * Webhooks are authoritative for actual conversions
+ */
+export async function handleConversionHint(req, res) {
   try {
-    // Support both 'event' and 'event_type' for backward compatibility
-    const event = req.body.event || req.body.event_type;
-    const { ref_id, program_id } = req.body;
+    const { session_token, conversion_id, amount } = req.body;
 
-    // Validate required fields
-    if (!ref_id) {
-      return res.status(400).json({ error: 'ref_id is required' });
-    }
-
-    if (!event) {
-      return res.status(400).json({ error: 'event is required (must be "click" or "sale")' });
-    }
-
-    if (event !== 'click' && event !== 'sale') {
-      return res.status(400).json({ error: 'event must be "click" or "sale"' });
-    }
-
-    // For sale events, program_id is required
-    if (event === 'sale' && !program_id) {
-      return res.status(400).json({ error: 'program_id is required for sale events' });
-    }
-
-    // For click events, program_id is optional but recommended
-    // If not provided, we'll try to find it from the affiliate's active programs
-    let vendorId = program_id;
-
-    // Validate vendor/program if program_id is provided
-    if (vendorId) {
-      const { data: vendorData, error: vendorError } = await supabase
-        .from('vendors')
-        .select('id, commission_type, commission_value, is_active')
-        .eq('id', vendorId)
-        .single();
-
-      if (vendorError || !vendorData) {
-        return res.status(404).json({ 
-          error: 'Program not found',
-          details: vendorError?.message 
-        });
-      }
-
-      if (!vendorData.is_active) {
-        return res.status(400).json({ 
-          error: 'Program is not active' 
-        });
-      }
-    }
-
-    // Determine status based on event type
-    let status;
-    let commissionAmount = 0;
-
-    if (event === 'click') {
-      status = 'click';
-      commissionAmount = 0;
-    } else if (event === 'sale') {
-      status = 'pending_commission';
-      commissionAmount = 0; // Will be calculated later when sale is confirmed
-    }
-
-    // For clicks without program_id, we need to find the vendor_id
-    // This could happen if the tracking link doesn't include program_id
-    // For now, we'll require program_id for both events
-    if (!vendorId) {
+    if (!session_token) {
       return res.status(400).json({ 
-        error: 'program_id is required' 
+        error: 'session_token is required' 
       });
     }
 
-    // Insert referral record into referrals table
-    const referralData = {
-      affiliate_id: ref_id,
-      vendor_id: vendorId,
-      status: status,
-      commission_amount: commissionAmount,
-    };
-
-    const { data: referralRecord, error: insertError } = await supabase
-      .from('referrals')
-      .insert([referralData])
-      .select()
+    // Validate session token
+    const { data: session, error: sessionError } = await supabase
+      .from('referral_sessions')
+      .select('id, affiliate_id, vendor_id, expires_at, is_active')
+      .eq('session_token', session_token)
       .single();
 
-    if (insertError) {
-      console.error('Error inserting referral:', insertError);
-      return res.status(500).json({ 
-        error: 'Failed to record event',
-        details: insertError.message 
+    if (sessionError || !session) {
+      // Log invalid session attempt
+      await logConversionEvent({
+        session_token,
+        external_transaction_id: conversion_id,
+        status: 'invalid_session',
+        error_message: 'Session not found or invalid',
+        request_payload: req.body,
+      });
+
+      return res.status(200).json({ 
+        received: true,
+        session_valid: false,
+        message: 'Session invalid or expired. Webhook will handle conversion if payment succeeds.'
       });
     }
 
-    console.log(`${event} event recorded:`, {
-      referral_id: referralRecord.id,
-      affiliate_id: ref_id,
-      vendor_id: vendorId,
-      status: status
+    // Check if session is active and not expired
+    const now = new Date();
+    const expiresAt = new Date(session.expires_at);
+    
+    if (!session.is_active || expiresAt <= now) {
+      await logConversionEvent({
+        session_token,
+        vendor_id: session.vendor_id,
+        external_transaction_id: conversion_id,
+        status: 'expired',
+        error_message: 'Session expired',
+        request_payload: req.body,
+      });
+
+      return res.status(200).json({ 
+        received: true,
+        session_valid: false,
+        message: 'Session expired. Webhook will handle conversion if payment succeeds.'
+      });
+    }
+
+    // Log successful conversion hint
+    await logConversionEvent({
+      session_token,
+      vendor_id: session.vendor_id,
+      external_transaction_id: conversion_id,
+      status: 'success',
+      request_payload: req.body,
     });
 
     return res.status(200).json({ 
-      success: true, 
-      message: `${event} recorded successfully`,
-      referral_id: referralRecord.id,
-      status: referralRecord.status
+      received: true,
+      session_valid: true,
+      message: 'Conversion hint recorded. Webhook is authoritative for actual conversion.'
     });
 
   } catch (error) {
-    console.error('Error handling track event:', error);
+    console.error('Error handling conversion hint:', error);
     return res.status(500).json({ 
       error: 'Internal server error',
       message: error.message 
@@ -150,7 +123,80 @@ export async function handleTrackEvent(req, res) {
   }
 }
 
-// Express route handler
-export default function trackEventRoute(req, res) {
-  return handleTrackEvent(req, res);
+/**
+ * Validate session token
+ */
+export async function handleSessionValidation(req, res) {
+  try {
+    const { token } = req.params;
+
+    if (!token) {
+      return res.status(400).json({ error: 'Session token is required' });
+    }
+
+    const { data: session, error: sessionError } = await supabase
+      .from('referral_sessions')
+      .select('id, affiliate_id, vendor_id, expires_at, is_active, created_at')
+      .eq('session_token', token)
+      .single();
+
+    if (sessionError || !session) {
+      return res.status(404).json({ 
+        valid: false,
+        message: 'Session not found' 
+      });
+    }
+
+    const now = new Date();
+    const expiresAt = new Date(session.expires_at);
+    const isValid = session.is_active && expiresAt > now;
+
+    return res.status(200).json({ 
+      valid: isValid,
+      expires_at: session.expires_at,
+      is_active: session.is_active,
+      expires_in_days: isValid 
+        ? Math.ceil((expiresAt - now) / (1000 * 60 * 60 * 24))
+        : 0
+    });
+
+  } catch (error) {
+    console.error('Error validating session:', error);
+    return res.status(500).json({ 
+      error: 'Internal server error',
+      message: error.message 
+    });
+  }
 }
+
+/**
+ * Log conversion event for debugging and audit
+ */
+async function logConversionEvent(eventData) {
+  try {
+    const { data, error } = await supabase
+      .from('conversion_events')
+      .insert({
+        session_token: eventData.session_token,
+        external_transaction_id: eventData.external_transaction_id,
+        vendor_id: eventData.vendor_id,
+        status: eventData.status,
+        error_message: eventData.error_message,
+        request_payload: eventData.request_payload || {},
+        ip_address: eventData.ip_address,
+        user_agent: eventData.user_agent,
+      });
+
+    if (error) {
+      console.error('Error logging conversion event:', error);
+    }
+  } catch (err) {
+    console.error('Exception logging conversion event:', err);
+  }
+}
+
+// Express route handlers
+export default {
+  handleConversionHint,
+  handleSessionValidation,
+};

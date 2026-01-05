@@ -34,3 +34,10 @@ $$;
 -- Grant execute permission to authenticated users
 GRANT EXECUTE ON FUNCTION public.get_user_names(UUID[]) TO authenticated;
 
+
+
+
+
+
+
+
