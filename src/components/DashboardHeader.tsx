@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
-import { User, Settings } from 'lucide-react';
+import { User, Settings, LogOut } from 'lucide-react';
 import { DropdownMenu, DropdownMenuItem, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { useTheme } from '@/lib/theme-provider';
@@ -18,6 +18,7 @@ export default function DashboardHeader() {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const location = useLocation();
   const { resolvedTheme } = useTheme();
 
   useEffect(() => {
@@ -63,12 +64,42 @@ export default function DashboardHeader() {
   };
 
   const getAccountPath = () => {
-    if (userProfile?.role === 'vendor') {
+    const path = location.pathname;
+
+    // Prefer current context based on URL, then fall back to role.
+    if (path.startsWith('/dashboard/vendor') || path.startsWith('/programs') || path.startsWith('/settings')) {
       return '/settings/account';
-    } else if (userProfile?.role === 'affiliate') {
+    }
+
+    if (path.startsWith('/dashboard/affiliate') || path.startsWith('/affiliate')) {
       return '/affiliate/settings/profile';
     }
-    return '/settings/account'; // default
+
+    if (userProfile?.role === 'vendor') return '/settings/account';
+    if (userProfile?.role === 'affiliate') return '/affiliate/settings/profile';
+
+    // Safe default – vendor-style account settings.
+    return '/settings/account';
+  };
+
+  const handleLogout = async () => {
+    try {
+      await supabase.auth.signOut();
+
+      const path = location.pathname;
+
+      // Redirect purely based on where the user is in the app right now.
+      // This avoids any mismatch between profile role and current UI context.
+      const isAffiliateContext =
+        path.startsWith('/dashboard/affiliate') ||
+        path.startsWith('/affiliate') ||
+        path.startsWith('/go');
+
+      const target = isAffiliateContext ? '/login/affiliate' : '/login/vendor';
+      navigate(target, { replace: true });
+    } catch (err) {
+      console.error('Error signing out:', err);
+    }
   };
 
   const displayName = userProfile?.full_name || userProfile?.email?.split('@')[0] || 'User';
@@ -122,6 +153,13 @@ export default function DashboardHeader() {
             >
               <Settings className="w-4 h-4" />
               <span>Account</span>
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={handleLogout}
+              className="flex items-center gap-2 text-red-500 hover:text-red-500"
+            >
+              <LogOut className="w-4 h-4" />
+              <span>Log out</span>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <div
