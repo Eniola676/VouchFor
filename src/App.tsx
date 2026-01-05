@@ -1,4 +1,5 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
 import { ThemeProvider } from './lib/theme-provider';
 import { OfferDataProvider } from './contexts/OfferDataContext';
 import VendorDashboard from './pages/VendorDashboard';
@@ -25,6 +26,108 @@ import AffiliateProfilePage from './pages/affiliate/settings/profile';
 import AffiliatePayoutPage from './pages/affiliate/settings/payout';
 import AffiliateSecurityPage from './pages/affiliate/settings/security';
 import PartnersPage from './pages/dashboard/vendor/partners';
+import { supabase } from './lib/supabase';
+
+/**
+ * Auth gate for the root route.
+ *
+ * - If user is authenticated, send them to the vendor dashboard
+ * - If not authenticated, send them to the vendor login page
+ *
+ * NOTE: This uses Supabase auth directly. If you swap auth providers later,
+ * update the check in this component and in RequireAuth below.
+ */
+function RootAuthGate() {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    let isCancelled = false;
+
+    async function checkAuth() {
+      try {
+        const { data, error } = await supabase.auth.getUser();
+
+        if (isCancelled) return;
+
+        if (error || !data?.user) {
+          // Not authenticated → send to vendor login
+          navigate('/login/vendor', { replace: true });
+        } else {
+          // Authenticated → send to main vendor dashboard
+          // If you later support separate affiliate/vendor dashboards, this
+          // is where you'd branch based on user metadata/role.
+          navigate('/dashboard/vendor', { replace: true });
+        }
+      } catch {
+        if (!isCancelled) {
+          navigate('/login/affiliate', { replace: true });
+        }
+      }
+    }
+
+    checkAuth();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [navigate]);
+
+  // Minimal placeholder while we resolve auth – avoids layout shift.
+  return null;
+}
+
+/**
+ * Simple auth guard for protected routes.
+ *
+ * - Redirects unauthenticated users to the vendor login page
+ * - Lets authenticated users render the requested dashboard page
+ *
+ * This is intentionally minimal and tied to Supabase; swap out the auth
+ * check in one place here if you change providers later.
+ */
+function RequireAuth({ children }: { children: JSX.Element }) {
+  const [isChecking, setIsChecking] = useState(true);
+  const [isAuthed, setIsAuthed] = useState(false);
+
+  useEffect(() => {
+    let isCancelled = false;
+
+    async function check() {
+      try {
+        const { data, error } = await supabase.auth.getUser();
+
+        if (isCancelled) return;
+
+        if (error || !data?.user) {
+          setIsAuthed(false);
+        } else {
+          setIsAuthed(true);
+        }
+      } finally {
+        if (!isCancelled) {
+          setIsChecking(false);
+        }
+      }
+    }
+
+    check();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, []);
+
+  if (isChecking) {
+    // Keep it minimal – real SaaS apps often show a tiny loader here.
+    return null;
+  }
+
+  if (!isAuthed) {
+    return <Navigate to="/login/vendor" replace />;
+  }
+
+  return children;
+}
 
 function App() {
   return (
@@ -32,8 +135,18 @@ function App() {
       <OfferDataProvider>
         <BrowserRouter>
           <Routes>
-            <Route path="/" element={<VendorDashboard />} />
-            <Route path="/dashboard/vendor" element={<VendorDashboard />} />
+            {/* Root acts as an auth gate instead of a concrete page */}
+            <Route path="/" element={<RootAuthGate />} />
+
+            {/* Dashboards are protected */}
+            <Route
+              path="/dashboard/vendor"
+              element={
+                <RequireAuth>
+                  <VendorDashboard />
+                </RequireAuth>
+              }
+            />
             <Route path="/programs" element={<Programs />} />
             <Route path="/preview" element={<ProgramPreview />} />
             <Route path="/p/:vendorSlug" element={<PartnerRecruitmentPage />} />
@@ -42,8 +155,22 @@ function App() {
             <Route path="/login/affiliate" element={<AffiliateLoginPage />} />
             <Route path="/login/vendor" element={<VendorLoginPage />} />
             <Route path="/auth/callback" element={<OAuthCallback />} />
-            <Route path="/dashboard/affiliate" element={<AffiliateDashboard />} />
-            <Route path="/dashboard/affiliate/commissions" element={<CommissionsPage />} />
+            <Route
+              path="/dashboard/affiliate"
+              element={
+                <RequireAuth>
+                  <AffiliateDashboard />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/dashboard/affiliate/commissions"
+              element={
+                <RequireAuth>
+                  <CommissionsPage />
+                </RequireAuth>
+              }
+            />
             <Route path="/go/:affiliateId/:programId" element={<TrackingLinkPage />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/settings/account" element={<AccountDetailsPage />} />
@@ -56,7 +183,14 @@ function App() {
             <Route path="/affiliate/settings/profile" element={<AffiliateProfilePage />} />
             <Route path="/affiliate/settings/payout" element={<AffiliatePayoutPage />} />
             <Route path="/affiliate/settings/security" element={<AffiliateSecurityPage />} />
-            <Route path="/dashboard/vendor/partners" element={<PartnersPage />} />
+            <Route
+              path="/dashboard/vendor/partners"
+              element={
+                <RequireAuth>
+                  <PartnersPage />
+                </RequireAuth>
+              }
+            />
           </Routes>
         </BrowserRouter>
       </OfferDataProvider>
