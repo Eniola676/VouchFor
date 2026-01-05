@@ -26,6 +26,11 @@ export default function AffiliateLoginPage() {
     setIsLoading(true);
 
     try {
+      // Check if supabase is properly configured
+      if (!supabase || !supabase.auth) {
+        throw new Error('Supabase is not configured. Please set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY environment variables.');
+      }
+
       const { data, error: signInError } = await supabase.auth.signInWithPassword({
         email: formData.email,
         password: formData.password,
@@ -54,6 +59,11 @@ export default function AffiliateLoginPage() {
     setIsGoogleLoading(true);
 
     try {
+      // Check if supabase is properly configured
+      if (!supabase || !supabase.auth) {
+        throw new Error('Supabase is not configured. Please set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY environment variables.');
+      }
+
       const redirectTo = `${window.location.origin}/auth/callback?redirect=/dashboard/affiliate${vendorSlug ? `&vendor=${vendorSlug}` : ''}`;
 
       const { error: oauthError } = await supabase.auth.signInWithOAuth({
