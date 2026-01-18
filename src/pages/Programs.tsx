@@ -52,16 +52,16 @@ export default function Programs() {
     try {
       setLoading(true);
       setError(null);
-      
+
       const { data: { user }, error: userError } = await supabase.auth.getUser();
-      
+
       if (userError) {
         console.error('Error getting user:', userError);
         setError('Authentication error. Please sign in again.');
         setLoading(false);
         return;
       }
-      
+
       if (!user) {
         console.log('No user found');
         setError('Please sign in to view your programs.');
@@ -88,7 +88,7 @@ export default function Programs() {
       }
 
       console.log('Fetched programs:', data?.length || 0, 'programs');
-      
+
       // Fetch partners count and revenue for each program
       const programsData: VendorProgram[] = (data || []) as VendorProgram[];
       if (programsData && programsData.length > 0) {
@@ -155,16 +155,16 @@ export default function Programs() {
       <div className="relative z-20">
         <DashboardHeader />
       </div>
-      
+
       <div className="flex flex-1 relative z-10">
         {/* Sidebar */}
         <div className="relative z-10">
           <VendorSidebar />
         </div>
-        
+
         {/* Main Content */}
         <div className="flex flex-1 relative z-10">
-          <div className="p-2 md:p-10 rounded-tl-2xl border-l border-gray-800 bg-black/95 backdrop-blur-xl flex flex-col gap-6 flex-1 w-full h-full overflow-y-auto">
+          <div className="p-2 md:p-10 border-l border-gray-800 bg-[#070614] backdrop-blur-xl flex flex-col gap-6 flex-1 w-full h-full overflow-y-auto">
             <div className="flex items-center justify-between mb-2">
               <div>
                 <h1 className="text-2xl font-semibold text-white mb-2">Your Programs</h1>
@@ -246,20 +246,20 @@ export default function Programs() {
                 {programs.map((program) => (
                   <div
                     key={program.id}
-                    className="bg-black/80 backdrop-blur-xl border border-gray-800 rounded-lg p-6 hover:border-gray-700 transition"
+                    className="bg-gradient-to-br from-[#0f0e21] to-[#1a1929] rounded-2xl p-6 border border-[rgba(255,255,255,0.05)] hover:border-[rgba(255,75,0,0.2)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_8px_32px_rgba(255,75,0,0.08)]"
                   >
                     <div className="flex items-start justify-between mb-4">
                       <div className="flex-1">
-                        <h3 className="text-lg font-semibold text-white mb-1">
+                        <h3 className="text-lg font-semibold text-white mb-2">
                           {program.program_name}
                         </h3>
                         <div className="flex items-center gap-2">
                           <span
                             className={cn(
-                              "text-xs px-2 py-1 rounded",
+                              "text-xs px-2 py-1 rounded-full font-medium",
                               program.is_active
-                                ? "bg-green-900/30 text-green-400 border border-green-800"
-                                : "bg-gray-900/30 text-gray-400 border border-gray-800"
+                                ? "bg-[rgba(34,197,94,0.15)] text-green-500 border border-[rgba(34,197,94,0.3)]"
+                                : "bg-[rgba(107,114,128,0.15)] text-gray-400 border border-[rgba(107,114,128,0.3)]"
                             )}
                           >
                             {program.is_active ? "Active" : "Inactive"}
@@ -269,27 +269,33 @@ export default function Programs() {
                     </div>
 
                     <div className="space-y-3 mb-4">
-                      <div className="flex items-center gap-2 text-sm">
-                        <Users className="w-4 h-4 text-gray-400" />
-                        <span className="text-gray-300">
-                          Partners: <span className="text-white font-medium">{program.partners_count || 0}</span>
-                        </span>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Users className="w-4 h-4 text-[#9ca3af]" />
+                          <span className="text-xs uppercase tracking-wider text-[#9ca3af] font-medium">
+                            Partners
+                          </span>
+                        </div>
+                        <span className="text-lg font-bold text-white">{program.partners_count || 0}</span>
                       </div>
-                      <div className="flex items-center gap-2 text-sm">
-                        <DollarSign className="w-4 h-4 text-gray-400" />
-                        <span className="text-gray-300">
-                          Revenue: <span className="text-white font-medium">{formatRevenue(program.revenue || 0)}</span>
-                        </span>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <DollarSign className="w-4 h-4 text-[#9ca3af]" />
+                          <span className="text-xs uppercase tracking-wider text-[#9ca3af] font-medium">
+                            Revenue
+                          </span>
+                        </div>
+                        <span className="text-lg font-bold text-white">{formatRevenue(program.revenue || 0)}</span>
                       </div>
                     </div>
 
-                    <div className="flex gap-2 pt-4 border-t border-gray-800">
+                    <div className="flex gap-2 pt-4 border-t border-[rgba(255,255,255,0.05)]">
                       <button
                         onClick={() => {
                           const url = `${window.location.origin}/p/${program.vendor_slug}`;
                           copyToClipboard(url, program.id);
                         }}
-                        className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-gray-900/50 hover:bg-gray-800 border border-gray-700 rounded-md text-sm text-white transition"
+                        className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-[rgba(255,255,255,0.05)] hover:bg-[rgba(255,255,255,0.08)] border border-[rgba(255,255,255,0.1)] rounded-lg text-sm text-white transition"
                       >
                         {copiedUrl === program.id ? (
                           <>
@@ -305,9 +311,9 @@ export default function Programs() {
                       </button>
                       <Link
                         to={`/programs/${program.vendor_slug}/edit`}
-                        className="flex-1 px-3 py-2 bg-gray-900/50 hover:bg-gray-800 border border-gray-700 rounded-md text-sm text-white text-center transition"
+                        className="flex-1 px-3 py-2 bg-[#ff4b00] hover:bg-[#ff5d1a] border border-[#ff4b00] rounded-lg text-sm text-white text-center transition font-medium"
                       >
-                        Program Details
+                        Details
                       </Link>
                     </div>
                   </div>

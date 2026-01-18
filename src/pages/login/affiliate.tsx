@@ -9,12 +9,12 @@ export default function AffiliateLoginPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const vendorSlug = searchParams.get('vendor') || '';
-  
+
   const [formData, setFormData] = useState({
     email: '',
     password: '',
   });
-  
+
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
@@ -95,10 +95,10 @@ export default function AffiliateLoginPage() {
           <h1 className="text-3xl font-semibold text-white mb-2">
             Sign in to your account
           </h1>
-          
+
           <p className="text-gray-400 mb-6">
-            New to VouchFor?{' '}
-            <Link 
+            New to Earniyx?{' '}
+            <Link
               to={`/signup/affiliate${vendorSlug ? `?vendor=${vendorSlug}` : ''}`}
               className="text-white font-semibold underline hover:text-gray-300 transition"
             >

@@ -1,25 +1,23 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
+import { Session, AuthChangeEvent } from '@supabase/supabase-js';
 
 export default function OAuthCallback() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const [error, setError] = useState<string | null>(null);
+  const processedRef = useRef(false);
 
   useEffect(() => {
-    const handleOAuthCallback = async () => {
+    let timeoutId: NodeJS.Timeout;
+
+    const handleSession = async (session: Session) => {
+      if (processedRef.current) return;
+      processedRef.current = true;
+
       try {
-        // Get the session from the URL hash
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-
-        if (sessionError) {
-          throw sessionError;
-        }
-
-        if (!session?.user) {
-          throw new Error('No user session found');
-        }
+        console.log('OAuthCallback: Handling session', session.user.id);
 
         // Check if user already has a profile
         const { data: profile, error: profileError } = await supabase
@@ -29,26 +27,36 @@ export default function OAuthCallback() {
           .single();
 
         if (profileError && profileError.code !== 'PGRST116') {
-          // PGRST116 is "not found" - that's okay, we'll create one
           console.error('Error checking profile:', profileError);
         }
 
         // Determine role from redirect URL or default to affiliate
-        const redirectPath = searchParams.get('redirect') || window.location.pathname;
-        let role = 'affiliate'; // default
+        // Determine role from localStorage or redirect URL or default to affiliate
+        const storageRole = localStorage.getItem('auth_role');
+        const storageVendorSlug = localStorage.getItem('auth_vendor_slug');
 
-        if (redirectPath.includes('/dashboard/affiliate') || redirectPath.includes('affiliate')) {
-          role = 'affiliate';
-        } else if (redirectPath.includes('/') || redirectPath.includes('vendor')) {
-          role = 'vendor';
+        // Clear storage immediately to prevent pollution
+        if (storageRole) localStorage.removeItem('auth_role');
+        if (storageVendorSlug) localStorage.removeItem('auth_vendor_slug');
+
+        const redirectPath = searchParams.get('redirect') || window.location.pathname;
+        let role = storageRole || 'affiliate'; // default
+
+        // Infer role context from the redirect path or previous navigation intent if not in storage
+        if (!storageRole) {
+          if (redirectPath.includes('/dashboard/affiliate') || redirectPath.includes('affiliate')) {
+            role = 'affiliate';
+          } else if (redirectPath.includes('/') || redirectPath.includes('vendor')) {
+            role = 'vendor';
+          }
         }
 
         // If profile doesn't exist or role is missing, create/update it
         if (!profile || !profile.role) {
-          const fullName = session.user.user_metadata?.full_name || 
-                          session.user.user_metadata?.name || 
-                          session.user.email?.split('@')[0] || 
-                          'User';
+          const fullName = session.user.user_metadata?.full_name ||
+            session.user.user_metadata?.name ||
+            session.user.email?.split('@')[0] ||
+            'User';
 
           const { error: upsertError } = await supabase
             .from('profiles')
@@ -60,17 +68,15 @@ export default function OAuthCallback() {
 
           if (upsertError) {
             console.error('Error creating/updating profile:', upsertError);
-            // Don't throw - profile might be created by trigger
           }
         }
 
         // If affiliate and vendor slug is present, join the program
         if (role === 'affiliate') {
-          const vendorSlug = searchParams.get('vendor');
-          
+          const vendorSlug = storageVendorSlug || searchParams.get('vendor');
+
           if (vendorSlug) {
             try {
-              // Look up the vendor by slug
               const { data: vendorData, error: vendorError } = await supabase
                 .from('vendors')
                 .select('id')
@@ -79,48 +85,69 @@ export default function OAuthCallback() {
                 .single();
 
               if (!vendorError && vendorData) {
-                // Use database function to join program (bypasses RLS)
                 const { data: joinData, error: joinError } = await supabase
                   .rpc('join_program', {
                     p_affiliate_id: session.user.id,
                     p_vendor_id: vendorData.id,
                   });
 
-                if (joinError) {
-                  console.warn('Failed to join program:', joinError);
-                  // Don't fail redirect if program join fails
-                } else {
-                  console.log('Successfully joined program:', vendorSlug, joinData);
-                }
-              } else {
-                console.warn('Vendor not found or inactive:', vendorSlug);
+                if (joinError) console.warn('Failed to join program:', joinError);
+                else console.log('Successfully joined program:', vendorSlug, joinData);
               }
             } catch (err) {
               console.warn('Error joining program:', err);
-              // Don't fail redirect if program join fails
             }
           }
-          
+
           navigate(vendorSlug ? `/dashboard/affiliate?vendor=${vendorSlug}` : '/dashboard/affiliate');
         } else {
-          navigate('/');
+          navigate('/dashboard/vendor');
         }
       } catch (err) {
-        console.error('OAuth callback error:', err);
+        console.error('OAuth processing error:', err);
         setError(err instanceof Error ? err.message : 'Failed to complete sign in');
-        // Redirect to appropriate login page after a delay
-        setTimeout(() => {
-          const redirectPath = searchParams.get('redirect') || '';
-          if (redirectPath.includes('affiliate')) {
-            navigate('/login/affiliate');
-          } else {
-            navigate('/login/vendor');
-          }
-        }, 3000);
       }
     };
 
-    handleOAuthCallback();
+    // Check for existing session first
+    supabase.auth.getSession().then(({ data: { session }, error }) => {
+      if (error) {
+        console.error('Error getting session:', error);
+        setError(error.message);
+        return;
+      }
+      if (session) {
+        handleSession(session);
+      }
+    });
+
+    // Listen for auth state changes (waits for the OAuth redirect processing to complete)
+    const { data: authListener } = supabase.auth.onAuthStateChange((event: AuthChangeEvent, session: Session | null) => {
+      console.log('Auth state change:', event);
+      if (event === 'SIGNED_IN' && session) {
+        handleSession(session);
+      } else if (event === 'SIGNED_OUT') {
+        // If we get specific error parameters in URL that supabase parsed
+        const params = new URLSearchParams(window.location.hash.substring(1)); // Implicit flow often puts error in hash
+        const errorDescription = params.get('error_description') || searchParams.get('error_description');
+        if (errorDescription) {
+          setError(errorDescription);
+          processedRef.current = true; // Stop waiting
+        }
+      }
+    });
+
+    // Fallback timeout in case nothing happens
+    timeoutId = setTimeout(() => {
+      if (!processedRef.current) {
+        setError('Request timed out. Please try logging in again.');
+      }
+    }, 15000); // 15 seconds
+
+    return () => {
+      authListener.subscription.unsubscribe();
+      clearTimeout(timeoutId);
+    };
   }, [navigate, searchParams]);
 
   if (error) {

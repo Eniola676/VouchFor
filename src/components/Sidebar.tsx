@@ -43,7 +43,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
         <div className="flex flex-col h-full">
           {/* Logo/Brand */}
           <div className="flex items-center justify-between h-16 px-6 border-b border-primary-800">
-            <h1 className="text-xl font-bold text-white">VouchFor</h1>
+            <h1 className="text-xl font-bold text-white">Earniyx</h1>
             <button
               onClick={onClose}
               className="lg:hidden text-gray-400 hover:text-white"
@@ -74,10 +74,9 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                 className={`
                   flex items-center px-4 py-3 text-sm font-medium rounded-lg
                   transition-colors duration-200
-                  ${
-                    item.active
-                      ? 'bg-primary-800 text-white'
-                      : 'text-gray-300 hover:bg-primary-800 hover:text-white'
+                  ${item.active
+                    ? 'bg-primary-800 text-white'
+                    : 'text-gray-300 hover:bg-primary-800 hover:text-white'
                   }
                 `}
               >

@@ -59,13 +59,13 @@ export default function CustomerSupportPage() {
       <div className="relative z-20">
         <DashboardHeader />
       </div>
-      
+
       <div className="flex flex-1 relative z-10">
         {/* Sidebar */}
         <div className="relative z-10">
           <Sidebar />
         </div>
-        
+
         {/* Main Content */}
         <div className="flex flex-1 relative z-10">
           <div className="p-2 md:p-10 rounded-tl-2xl border-l border-gray-800 bg-black/95 backdrop-blur-xl flex flex-col gap-6 flex-1 w-full h-full overflow-y-auto">
@@ -90,10 +90,10 @@ export default function CustomerSupportPage() {
                   Send us an email and we'll get back to you within 24 hours.
                 </p>
                 <a
-                  href="mailto:support@vouchfor.com"
+                  href="mailto:support@earniyx.com"
                   className="inline-flex items-center gap-2 text-primary-400 hover:text-primary-300 text-sm font-medium"
                 >
-                  support@vouchfor.com
+                  support@earniyx.com
                 </a>
               </div>
 

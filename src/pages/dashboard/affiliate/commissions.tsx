@@ -99,7 +99,7 @@ export default function CommissionsPage() {
       <div className="relative z-10">
         <AffiliateSidebar />
       </div>
-      
+
       <div className="flex flex-1 relative z-10">
         <div className="p-2 md:p-10 rounded-tl-2xl border-l border-gray-800 bg-black/95 backdrop-blur-xl flex flex-col gap-6 flex-1 w-full h-full overflow-y-auto">
           <div className="mb-4">
@@ -111,7 +111,7 @@ export default function CommissionsPage() {
           {bannerAmount > 0 && (
             <div className="bg-yellow-900/20 border border-yellow-800 rounded-lg p-4 mb-6">
               <p className="text-yellow-400 text-sm">
-                🎉 Wow, you've made ${bannerAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} using VouchFor. Keep it up!
+                🎉 Wow, you've made ${bannerAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} using Earniyx. Keep it up!
               </p>
             </div>
           )}

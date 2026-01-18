@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
-import { User, Settings, LogOut } from 'lucide-react';
+import { Search, Settings, LogOut } from 'lucide-react';
 import { DropdownMenu, DropdownMenuItem, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { useTheme } from '@/lib/theme-provider';
@@ -33,7 +33,6 @@ export default function DashboardHeader() {
         return;
       }
 
-      // Fetch profile from profiles table
       const { data: profile } = await supabase
         .from('profiles')
         .select('full_name, avatar_url, role')
@@ -48,7 +47,6 @@ export default function DashboardHeader() {
       });
     } catch (err) {
       console.error('Error fetching user profile:', err);
-      // Fallback to auth user data
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         setUserProfile({
@@ -66,7 +64,6 @@ export default function DashboardHeader() {
   const getAccountPath = () => {
     const path = location.pathname;
 
-    // Prefer current context based on URL, then fall back to role.
     if (path.startsWith('/dashboard/vendor') || path.startsWith('/programs') || path.startsWith('/settings')) {
       return '/settings/account';
     }
@@ -78,7 +75,6 @@ export default function DashboardHeader() {
     if (userProfile?.role === 'vendor') return '/settings/account';
     if (userProfile?.role === 'affiliate') return '/affiliate/settings/profile';
 
-    // Safe default – vendor-style account settings.
     return '/settings/account';
   };
 
@@ -88,8 +84,6 @@ export default function DashboardHeader() {
 
       const path = location.pathname;
 
-      // Redirect purely based on where the user is in the app right now.
-      // This avoids any mismatch between profile role and current UI context.
       const isAffiliateContext =
         path.startsWith('/dashboard/affiliate') ||
         path.startsWith('/affiliate') ||
@@ -113,10 +107,24 @@ export default function DashboardHeader() {
   return (
     <header className={cn(
       "w-full h-16 border-b flex items-center justify-between px-6 z-20 relative",
-      "bg-white dark:bg-black border-gray-200 dark:border-gray-800"
+      "bg-[#1a1a2c] border-gray-800"
     )}>
-      <div className="flex-1" /> {/* Spacer for centering */}
-      
+      {/* Logo */}
+      <div className="flex items-center gap-8">
+        <img src="/logo.png" alt="Earniyx" className="h-9 w-auto" />
+
+        {/* Search Bar */}
+        <div className="relative hidden md:block">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+          <input
+            type="text"
+            placeholder="Search campaigns, affiliates..."
+            className="w-64 lg:w-80 pl-10 pr-4 py-2 bg-[#0f0e21] border border-[rgba(255,255,255,0.05)] rounded-lg text-sm text-white placeholder-gray-500 focus:outline-none focus:border-[rgba(255,75,0,0.3)] focus:ring-1 focus:ring-[rgba(255,75,0,0.2)] transition-all"
+          />
+        </div>
+      </div>
+
+      {/* Right Section */}
       <div className="flex items-center gap-4">
         {!loading && userProfile && (
           <DropdownMenu
@@ -124,8 +132,8 @@ export default function DashboardHeader() {
             trigger={
               <div className={cn(
                 "flex items-center gap-3 px-4 py-2 rounded-full transition-colors",
-                "bg-gray-100 dark:bg-gray-900/50 border border-gray-300 dark:border-gray-700",
-                "hover:bg-gray-200 dark:hover:bg-gray-800/50 cursor-pointer"
+                "bg-[#0f0e21] border border-[rgba(255,255,255,0.05)]",
+                "hover:bg-[#1a1929] cursor-pointer"
               )}>
                 {userProfile.avatar_url ? (
                   <img
@@ -134,14 +142,11 @@ export default function DashboardHeader() {
                     className="w-8 h-8 rounded-full object-cover"
                   />
                 ) : (
-                  <div className="w-8 h-8 rounded-full bg-primary-600 flex items-center justify-center text-white text-sm font-semibold">
+                  <div className="w-8 h-8 rounded-full bg-[#ff4b00] flex items-center justify-center text-white text-sm font-semibold">
                     {initials}
                   </div>
                 )}
-                <span className={cn(
-                  "text-sm font-medium",
-                  "text-gray-900 dark:text-white"
-                )}>
+                <span className="text-sm font-medium text-white">
                   {displayName}
                 </span>
               </div>
@@ -166,7 +171,7 @@ export default function DashboardHeader() {
               className="px-4 py-2 flex items-center justify-between gap-4"
               onClick={(e) => e.stopPropagation()}
             >
-              <span className="text-sm text-gray-900 dark:text-gray-100">Theme</span>
+              <span className="text-sm text-gray-100">Theme</span>
               <ThemeToggle />
             </div>
           </DropdownMenu>
@@ -174,14 +179,13 @@ export default function DashboardHeader() {
         {loading && (
           <div className={cn(
             "flex items-center gap-3 px-4 py-2 rounded-full",
-            "bg-gray-100 dark:bg-gray-900/50 border border-gray-300 dark:border-gray-700"
+            "bg-[#0f0e21] border border-[rgba(255,255,255,0.05)]"
           )}>
-            <div className="w-8 h-8 rounded-full bg-gray-300 dark:bg-gray-700 animate-pulse" />
-            <div className="w-20 h-4 bg-gray-300 dark:bg-gray-700 rounded animate-pulse" />
+            <div className="w-8 h-8 rounded-full bg-gray-700 animate-pulse" />
+            <div className="w-20 h-4 bg-gray-700 rounded animate-pulse" />
           </div>
         )}
       </div>
     </header>
   );
 }
-

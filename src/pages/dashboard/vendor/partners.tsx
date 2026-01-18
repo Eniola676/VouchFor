@@ -83,7 +83,7 @@ export default function PartnersPage() {
 
       if (namesError) {
         console.warn('Error fetching user names from function, falling back to profiles:', namesError);
-        
+
         // Fallback: Get partner names from profiles only
         const { data: profiles, error: profilesError } = await supabase
           .from('profiles')
@@ -185,16 +185,16 @@ export default function PartnersPage() {
       <div className="relative z-20">
         <DashboardHeader />
       </div>
-      
+
       <div className="flex flex-1 relative z-10">
         {/* Sidebar */}
         <div className="relative z-10">
           <VendorSidebar />
         </div>
-        
+
         {/* Main Content */}
         <div className="flex flex-1 relative z-10">
-          <div className="p-2 md:p-10 rounded-tl-2xl border-l border-gray-800 bg-black/95 backdrop-blur-xl flex flex-col gap-6 flex-1 w-full h-full overflow-y-auto">
+          <div className="p-2 md:p-10 border-l border-gray-800 bg-[#070614] backdrop-blur-xl flex flex-col gap-6 flex-1 w-full h-full overflow-y-auto">
             {/* Page Header */}
             <div className="mb-4">
               <div className="flex items-center gap-2 mb-2">
@@ -223,40 +223,42 @@ export default function PartnersPage() {
                 <p className="text-sm text-gray-500">Partners will appear here once they join your programs</p>
               </div>
             ) : (
-              <div className="bg-black/80 backdrop-blur-xl border border-gray-800 rounded-lg overflow-hidden">
-                {/* Table */}
+              <div className="bg-gradient-to-br from-[#0f0e21] to-[#1a1929] rounded-2xl border border-[rgba(255,255,255,0.05)] overflow-hidden">
                 <div className="overflow-x-auto">
                   <table className="w-full">
-                    <thead className="bg-gray-900/50 border-b border-gray-800">
+                    <thead className="bg-[rgba(0,0,0,0.3)] border-b border-[rgba(255,255,255,0.05)]">
                       <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                        <th className="px-6 py-4 text-left text-xs font-medium text-[#9ca3af] uppercase tracking-wider">
                           Partner Name
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                        <th className="px-6 py-4 text-left text-xs font-medium text-[#9ca3af] uppercase tracking-wider">
                           Program Name
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                        <th className="px-6 py-4 text-right text-xs font-medium text-[#9ca3af] uppercase tracking-wider">
                           Revenue Generated
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                        <th className="px-6 py-4 text-right text-xs font-medium text-[#9ca3af] uppercase tracking-wider">
                           Commission to Pay
                         </th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-800">
+                    <tbody className="divide-y divide-[rgba(255,255,255,0.05)]">
                       {partners.map((partner, index) => (
-                        <tr key={`${partner.affiliate_id}-${partner.program_id}-${index}`} className="hover:bg-gray-900/30 transition">
+                        <tr
+                          key={`${partner.affiliate_id}-${partner.program_id}-${index}`}
+                          className="hover:bg-[rgba(255,75,0,0.05)] transition-colors"
+                        >
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-white font-medium">
                             {partner.partner_name}
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-[#9ca3af]">
                             {partner.program_name}
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-white font-semibold">
-                            ${partner.revenue_generated.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-white font-semibold text-right">
+                            ${partner.revenue_generated.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-yellow-400 font-semibold">
-                            ${partner.commission_to_pay.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-[#ff4b00] font-semibold text-right">
+                            ${partner.commission_to_pay.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                           </td>
                         </tr>
                       ))}

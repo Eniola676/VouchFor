@@ -1,3 +1,5 @@
+
+import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { ThemeProvider } from './lib/theme-provider';
@@ -27,78 +29,24 @@ import AffiliatePayoutPage from './pages/affiliate/settings/payout';
 import AffiliateSecurityPage from './pages/affiliate/settings/security';
 import PartnersPage from './pages/dashboard/vendor/partners';
 import { supabase } from './lib/supabase';
+import LandingPage from './pages/LandingPage';
 
-/**
- * Auth gate for the root route.
- *
- * - If user is authenticated, send them to the vendor dashboard
- * - If not authenticated, send them to the vendor login page
- *
- * NOTE: This uses Supabase auth directly. If you swap auth providers later,
- * update the check in this component and in RequireAuth below.
- */
-function RootAuthGate() {
+function RequireAuth({ children }: { children: JSX.Element }) {
+  const [isChecking, setIsChecking] = useState(true);
+  const [isAuthed, setIsAuthed] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
     let isCancelled = false;
 
-    async function checkAuth() {
+    // Check current session
+    async function checkSession() {
       try {
-        const { data, error } = await supabase.auth.getUser();
+        const { data, error } = await supabase.auth.getSession();
 
         if (isCancelled) return;
 
-        if (error || !data?.user) {
-          // Not authenticated → send to vendor login
-          navigate('/login/vendor', { replace: true });
-        } else {
-          // Authenticated → send to main vendor dashboard
-          // If you later support separate affiliate/vendor dashboards, this
-          // is where you'd branch based on user metadata/role.
-          navigate('/dashboard/vendor', { replace: true });
-        }
-      } catch {
-        if (!isCancelled) {
-          navigate('/login/affiliate', { replace: true });
-        }
-      }
-    }
-
-    checkAuth();
-
-    return () => {
-      isCancelled = true;
-    };
-  }, [navigate]);
-
-  // Minimal placeholder while we resolve auth – avoids layout shift.
-  return null;
-}
-
-/**
- * Simple auth guard for protected routes.
- *
- * - Redirects unauthenticated users to the vendor login page
- * - Lets authenticated users render the requested dashboard page
- *
- * This is intentionally minimal and tied to Supabase; swap out the auth
- * check in one place here if you change providers later.
- */
-function RequireAuth({ children }: { children: JSX.Element }) {
-  const [isChecking, setIsChecking] = useState(true);
-  const [isAuthed, setIsAuthed] = useState(false);
-
-  useEffect(() => {
-    let isCancelled = false;
-
-    async function check() {
-      try {
-        const { data, error } = await supabase.auth.getUser();
-
-        if (isCancelled) return;
-
-        if (error || !data?.user) {
+        if (error || !data?.session) {
           setIsAuthed(false);
         } else {
           setIsAuthed(true);
@@ -110,15 +58,29 @@ function RequireAuth({ children }: { children: JSX.Element }) {
       }
     }
 
-    check();
+    checkSession();
+
+    // Listen for auth state changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (isCancelled) return;
+
+      console.log('Auth state changed:', event);
+
+      if (event === 'SIGNED_OUT' || !session) {
+        setIsAuthed(false);
+        navigate('/login/vendor', { replace: true });
+      } else if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+        setIsAuthed(true);
+      }
+    });
 
     return () => {
       isCancelled = true;
+      subscription.unsubscribe();
     };
-  }, []);
+  }, [navigate]);
 
   if (isChecking) {
-    // Keep it minimal – real SaaS apps often show a tiny loader here.
     return null;
   }
 
@@ -135,8 +97,8 @@ function App() {
       <OfferDataProvider>
         <BrowserRouter>
           <Routes>
-            {/* Root acts as an auth gate instead of a concrete page */}
-            <Route path="/" element={<RootAuthGate />} />
+            {/* Landing Page at Root */}
+            <Route path="/" element={<LandingPage />} />
 
             {/* Dashboards are protected */}
             <Route

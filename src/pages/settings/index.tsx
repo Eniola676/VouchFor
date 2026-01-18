@@ -22,7 +22,7 @@ export default function SettingsPage() {
     },
     {
       title: 'Integrations',
-      description: 'Add the VouchFor tracker to your website to track affiliate signups',
+      description: 'Add the Earniyx tracker to your website to track affiliate signups',
       icon: <Plug className="w-6 h-6 text-primary-400" />,
       href: '/settings/integrations',
       color: 'primary',
@@ -35,13 +35,13 @@ export default function SettingsPage() {
       <div className="relative z-20">
         <DashboardHeader />
       </div>
-      
+
       <div className="flex flex-1 relative z-10">
         {/* Sidebar */}
         <div className="relative z-10">
           <VendorSidebar />
         </div>
-        
+
         {/* Main Content */}
         <div className="flex flex-1 relative z-10">
           <div className="p-2 md:p-10 rounded-tl-2xl border-l border-gray-800 bg-black/95 backdrop-blur-xl flex flex-col gap-6 flex-1 w-full h-full overflow-y-auto">

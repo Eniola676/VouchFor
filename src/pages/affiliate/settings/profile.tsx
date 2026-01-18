@@ -142,13 +142,13 @@ export default function AffiliateProfilePage() {
       <div className="relative z-20">
         <DashboardHeader />
       </div>
-      
+
       <div className="flex flex-1 relative z-10">
         {/* Sidebar */}
         <div className="relative z-10">
           <AffiliateSidebar />
         </div>
-        
+
         {/* Main Content */}
         <div className="flex flex-1 relative z-10">
           <div className="p-2 md:p-10 rounded-tl-2xl border-l border-gray-800 bg-black/95 backdrop-blur-xl flex flex-col gap-6 flex-1 w-full h-full overflow-y-auto">
@@ -172,7 +172,7 @@ export default function AffiliateProfilePage() {
                 <div className="bg-gray-900/50 border border-gray-800 rounded-lg p-6">
                   <h2 className="text-lg font-semibold text-white mb-4">Profile Information</h2>
                   <p className="text-sm text-gray-400 mb-4">
-                    Keep your profile information up to date. This information is used across your VouchFor account.
+                    Keep your profile information up to date. This information is used across your Earniyx account.
                   </p>
                   <div className="space-y-3">
                     <div className="flex items-center gap-3 text-sm">

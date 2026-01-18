@@ -6,13 +6,13 @@ import { supabase } from '@/lib/supabase';
 
 export default function VendorSignupPage() {
   const navigate = useNavigate();
-  
+
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
     password: '',
   });
-  
+
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -62,8 +62,8 @@ export default function VendorSignupPage() {
         // Don't fail signup if profile creation fails - trigger should handle it
       }
 
-      // Redirect to vendor dashboard (root path)
-      navigate('/');
+      // Redirect to vendor dashboard
+      navigate('/dashboard/vendor');
     } catch (err) {
       console.error('Signup error:', err);
       setError(err instanceof Error ? err.message : 'Failed to create account. Please try again.');
@@ -82,10 +82,13 @@ export default function VendorSignupPage() {
         throw new Error('Supabase is not configured. Please set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY environment variables.');
       }
 
+      // Store auth context
+      localStorage.setItem('auth_role', 'vendor');
+
       const { error: oauthError } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/auth/callback?redirect=/`,
+          redirectTo: `${window.location.origin}/auth/callback`,
           queryParams: {
             access_type: 'offline',
             prompt: 'consent',
@@ -111,17 +114,17 @@ export default function VendorSignupPage() {
           <h1 className="text-3xl font-semibold text-white mb-2">
             Create Vendor Account
           </h1>
-          
+
           <p className="text-gray-400 mb-6">
             Already have an account?{' '}
-            <Link 
+            <Link
               to="/login/vendor"
               className="text-white font-semibold underline hover:text-gray-300 transition"
             >
               Sign in here!
             </Link>
           </p>
-          
+
           <p className="text-gray-400 mb-6">
             Sign up to create and manage your affiliate referral program.
           </p>

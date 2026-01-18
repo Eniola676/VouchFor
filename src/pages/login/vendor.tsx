@@ -7,12 +7,12 @@ import { Eye, EyeOff } from 'lucide-react';
 
 export default function VendorLoginPage() {
   const navigate = useNavigate();
-  
+
   const [formData, setFormData] = useState({
     email: '',
     password: '',
   });
-  
+
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
@@ -43,7 +43,7 @@ export default function VendorLoginPage() {
       }
 
       // Redirect to vendor dashboard
-      navigate('/');
+      navigate('/dashboard/vendor');
     } catch (err) {
       console.error('Sign in error:', err);
       setError(err instanceof Error ? err.message : 'Failed to sign in. Please check your credentials.');
@@ -62,10 +62,13 @@ export default function VendorLoginPage() {
         throw new Error('Supabase is not configured. Please set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY environment variables.');
       }
 
+      // Store auth context
+      localStorage.setItem('auth_role', 'vendor');
+
       const { error: oauthError } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/auth/callback?redirect=/`,
+          redirectTo: `${window.location.origin}/auth/callback`,
           queryParams: {
             access_type: 'offline',
             prompt: 'consent',
@@ -91,10 +94,10 @@ export default function VendorLoginPage() {
           <h1 className="text-3xl font-semibold text-white mb-2">
             Sign in to your account
           </h1>
-          
+
           <p className="text-gray-400 mb-6">
-            New to VouchFor?{' '}
-            <Link 
+            New to Earniyx?{' '}
+            <Link
               to="/signup/vendor"
               className="text-white font-semibold underline hover:text-gray-300 transition"
             >

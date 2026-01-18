@@ -101,7 +101,7 @@ export default function IntegrationsPage() {
     }
   };
 
-  const trackerScriptUrl = typeof window !== 'undefined' 
+  const trackerScriptUrl = typeof window !== 'undefined'
     ? `${window.location.origin}/tracker.js`
     : 'https://your-domain.com/tracker.js';
 
@@ -127,14 +127,14 @@ export default function IntegrationsPage() {
     try {
       // Try to fetch the destination URL and check if tracker is loaded
       // Note: This might fail due to CORS, so we'll show a manual check option
-      await fetch(selectedProgram.destination_url, { 
+      await fetch(selectedProgram.destination_url, {
         method: 'HEAD',
         mode: 'no-cors' // This will always succeed but we can't read the response
       });
 
       // Since we can't actually check due to CORS, we'll show instructions
       setInstallationStatus('unknown');
-      alert('Due to browser security (CORS), we cannot automatically check installation.\n\nPlease manually verify:\n1. Open your destination URL in a new tab\n2. Open browser console (F12)\n3. Type: window.vouchfor\n4. If it shows an object, the tracker is installed!');
+      alert('Due to browser security (CORS), we cannot automatically check installation.\n\nPlease manually verify:\n1. Open your destination URL in a new tab\n2. Open browser console (F12)\n3. Type: window.earniyx\n4. If it shows an object, the tracker is installed!');
     } catch (err) {
       console.error('Error checking installation:', err);
       setInstallationStatus('unknown');
@@ -173,7 +173,7 @@ export default function IntegrationsPage() {
 
   const globalScriptCode = `<script src="${trackerScriptUrl}"></script>`;
 
-  const stripeCode = selectedProgram 
+  const stripeCode = selectedProgram
     ? `// When creating a Stripe Payment Intent
 const paymentIntent = await stripe.paymentIntents.create({
   amount: 2000, // $20.00 in cents
@@ -184,7 +184,7 @@ const paymentIntent = await stripe.paymentIntents.create({
 });`
     : '';
 
-  const paypalCode = selectedProgram 
+  const paypalCode = selectedProgram
     ? `// When creating a PayPal order
 const order = await paypal.orders.create({
   intent: 'CAPTURE',
@@ -204,19 +204,19 @@ const order = await paypal.orders.create({
       <div className="relative z-20">
         <DashboardHeader />
       </div>
-      
+
       <div className="flex flex-1 relative z-10">
         {/* Sidebar */}
         <div className="relative z-10">
           <VendorSidebar />
         </div>
-        
+
         {/* Main Content */}
         <div className="flex flex-1 relative z-10">
           <div className="p-2 md:p-10 rounded-tl-2xl border-l border-gray-800 bg-black/95 backdrop-blur-xl flex flex-col gap-6 flex-1 w-full h-full overflow-y-auto">
             <div className="mb-4">
               <h1 className="text-2xl font-semibold text-white mb-2">Integrations</h1>
-              <p className="text-sm text-gray-400">Add the VouchFor tracker to your website to track affiliate clicks and conversions</p>
+              <p className="text-sm text-gray-400">Add the Earniyx tracker to your website to track affiliate clicks and conversions</p>
             </div>
 
             {/* Program Selector */}
@@ -292,7 +292,7 @@ const order = await paypal.orders.create({
                   <p className="text-sm text-gray-400 mb-4">
                     <strong>How to add it:</strong> Copy the code below and ask your web developer to add it to your website's template (usually in the header or footer, before the closing <code className="text-gray-500">&lt;/body&gt;</code> tag). If you're using WordPress, Shopify, or another platform, you can usually add this in your theme settings.
                   </p>
-                  
+
                   <CodeBlock code={globalScriptCode} id="global-script" />
 
                   {installationStatus === 'installed' && (
@@ -316,7 +316,7 @@ const order = await paypal.orders.create({
                     <span className="w-8 h-8 rounded-full bg-primary-600/20 flex items-center justify-center text-primary-400 font-bold text-sm">2</span>
                     <span>Configure Payment Processor</span>
                   </h2>
-                  
+
                   <p className="text-sm text-gray-400 mb-4">
                     When a customer makes a payment, you need to tell Stripe or PayPal which program this sale belongs to. Copy the code below and add it to your checkout code where you create payments.
                   </p>
@@ -370,7 +370,7 @@ const order = await paypal.orders.create({
                     <span className="w-8 h-8 rounded-full bg-primary-600/20 flex items-center justify-center text-primary-400 font-bold text-sm">3</span>
                     <span>Configure Webhooks</span>
                   </h2>
-                  
+
                   <p className="text-sm text-gray-400 mb-4">
                     A webhook is like a notification system. When someone completes a payment, Stripe or PayPal will automatically notify us. This way, we can track sales without needing any code on your thank you page!
                   </p>
@@ -468,11 +468,10 @@ const order = await paypal.orders.create({
                       onClick={() => {
                         setListening(!listening);
                       }}
-                      className={`flex items-center gap-2 px-4 py-2 rounded-md text-white text-sm transition ${
-                        listening 
-                          ? 'bg-red-600 hover:bg-red-700' 
-                          : 'bg-primary-600 hover:bg-primary-700'
-                      }`}
+                      className={`flex items-center gap-2 px-4 py-2 rounded-md text-white text-sm transition ${listening
+                        ? 'bg-red-600 hover:bg-red-700'
+                        : 'bg-primary-600 hover:bg-primary-700'
+                        }`}
                     >
                       {listening ? (
                         <>
@@ -587,7 +586,7 @@ const order = await paypal.orders.create({
                       </div>
                     </div>
                   </div>
-                  
+
                   <div className="mt-6 p-4 bg-primary-900/20 border border-primary-800 rounded-md">
                     <p className="text-sm text-primary-300">
                       <strong>✨ The Best Part:</strong> Everything happens automatically! Once you set up the webhook (Step 3), you don't need to add any code to your thank you page. Sales are tracked instantly when payments complete.

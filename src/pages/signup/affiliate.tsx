@@ -8,13 +8,13 @@ export default function AffiliateSignupPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const vendorSlug = searchParams.get('vendor') || '';
-  
+
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
     password: '',
   });
-  
+
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -101,7 +101,7 @@ export default function AffiliateSignupPage() {
 
       // Small delay to ensure database transaction is committed
       await new Promise(resolve => setTimeout(resolve, 500));
-      
+
       // Redirect to affiliate dashboard
       navigate('/dashboard/affiliate');
     } catch (err) {
@@ -122,12 +122,16 @@ export default function AffiliateSignupPage() {
         throw new Error('Supabase is not configured. Please set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY environment variables.');
       }
 
-      const redirectTo = `${window.location.origin}/auth/callback?redirect=/dashboard/affiliate${vendorSlug ? `&vendor=${vendorSlug}` : ''}`;
+      // Store auth context
+      localStorage.setItem('auth_role', 'affiliate');
+      if (vendorSlug) {
+        localStorage.setItem('auth_vendor_slug', vendorSlug);
+      }
 
       const { error: oauthError } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: redirectTo,
+          redirectTo: `${window.location.origin}/auth/callback`,
           queryParams: {
             access_type: 'offline',
             prompt: 'consent',
@@ -153,10 +157,10 @@ export default function AffiliateSignupPage() {
           <h1 className="text-3xl font-semibold text-white mb-2">
             Join as an Affiliate Partner
           </h1>
-          
+
           <p className="text-gray-400 mb-6">
             Already have an account?{' '}
-            <Link 
+            <Link
               to={`/login/affiliate${vendorSlug ? `?vendor=${vendorSlug}` : ''}`}
               className="text-white font-semibold underline hover:text-gray-300 transition"
             >

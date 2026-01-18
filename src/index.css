@@ -1,5 +1,36 @@
-/* Satoshi Font - Using Fontshare CDN (free tier available) */
-@import url('https://api.fontshare.com/v2/css?f[]=satoshi@300,400,500,600,700&display=swap');
+/* Inter Font - Using Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+/* Ginora Sans - Embedded */
+@font-face {
+  font-family: 'Ginora Sans';
+  font-style: normal;
+  font-weight: 400;
+  src: local('Ginora Sans'), url('https://fonts.cdnfonts.com/s/18654/Ginóra Sans Regular.woff') format('woff');
+}
+
+@font-face {
+  font-family: 'Ginora Sans';
+  font-style: normal;
+  font-weight: 500;
+  src: local('Ginora Sans'), url('https://fonts.cdnfonts.com/s/18654/Ginóra Sans Semi Bold.woff') format('woff');
+}
+
+@font-face {
+  font-family: 'Ginora Sans';
+  font-style: normal;
+  font-weight: 600;
+  /* Using Semi Bold file for 600 if dedicated 600 doesn't exist, or Bold if prefer heavier. cdnfonts listed 400, 300, 500, 700. I will map 600 to Bold 700 or SemiBold 500? I'll allow 500/700 usage only or alias 600 to 700. */
+  src: local('Ginora Sans'), url('https://fonts.cdnfonts.com/s/18654/Ginóra Sans Bold.woff') format('woff');
+}
+
+@font-face {
+  font-family: 'Ginora Sans';
+  font-style: normal;
+  font-weight: 700;
+  src: local('Ginora Sans'), url('https://fonts.cdnfonts.com/s/18654/Ginóra Sans Bold.woff') format('woff');
+}
+
 
 @tailwind base;
 @tailwind components;
@@ -10,47 +41,48 @@
    ============================================ */
 
 :root {
-  /* Accent Color - Consistent Orange */
-  --accent: #ea580c;
-  --accent-hover: #c2410c;
-  --accent-light: #fb923c;
-  --accent-dark: #9a3412;
-  
-  /* Light Theme */
+  /* Accent Color - Updated Orange */
+  --accent: #ff4b00;
+  --accent-hover: #e04100;
+  --accent-light: #ff7438;
+  --accent-dark: #cc3c00;
+
+  /* Theme - Dark Default (#070614) */
+  --bg-primary: #070614;
+  --bg-secondary: #0f0e21;
+  --bg-tertiary: #18172e;
+  --surface: #0f0e21;
+  --surface-elevated: #1a1936;
+
+  /* Text - Adapted for Dark */
+  --text-primary: #ffffff;
+  --text-secondary: #9ca3af;
+  --text-tertiary: #6b7280;
+
+  --border: #1f1e35;
+  --border-hover: #2f2d4a;
+
+  --shadow: rgba(0, 0, 0, 0.4);
+  --shadow-lg: rgba(0, 0, 0, 0.6);
+}
+
+.light {
+  /* Optional Light Theme fallback */
   --bg-primary: #ffffff;
   --bg-secondary: #f9fafb;
   --bg-tertiary: #f3f4f6;
   --surface: #ffffff;
   --surface-elevated: #ffffff;
-  
+
   --text-primary: #111827;
   --text-secondary: #6b7280;
   --text-tertiary: #9ca3af;
-  
+
   --border: #e5e7eb;
   --border-hover: #d1d5db;
-  
+
   --shadow: rgba(0, 0, 0, 0.1);
   --shadow-lg: rgba(0, 0, 0, 0.15);
-}
-
-.dark {
-  /* Dark Theme */
-  --bg-primary: #000000;
-  --bg-secondary: #0a0a0a;
-  --bg-tertiary: #111111;
-  --surface: #0a0a0a;
-  --surface-elevated: #1a1a1a;
-  
-  --text-primary: #ffffff;
-  --text-secondary: #9ca3af;
-  --text-tertiary: #6b7280;
-  
-  --border: #1f2937;
-  --border-hover: #374151;
-  
-  --shadow: rgba(0, 0, 0, 0.3);
-  --shadow-lg: rgba(0, 0, 0, 0.5);
 }
 
 /* Base Styles */
@@ -58,10 +90,10 @@
   * {
     box-sizing: border-box;
   }
-  
+
   body {
     margin: 0;
-    font-family: 'Satoshi', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
       'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
       sans-serif;
     -webkit-font-smoothing: antialiased;
@@ -70,7 +102,7 @@
     color: var(--text-primary);
     transition: background-color 0.2s ease, color 0.2s ease;
   }
-  
+
   /* Ensure smooth theme transitions */
   * {
     transition-property: background-color, border-color, color, fill, stroke;

@@ -1,5 +1,5 @@
 {
-  "name": "vouchfor",
+  "name": "earniyx",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -24,6 +24,7 @@
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-router-dom": "^7.9.6",
+    "recharts": "^3.6.0",
     "simplex-noise": "^4.0.3",
     "tailwind-merge": "^3.4.0",
     "three": "^0.181.2"
