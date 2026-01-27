@@ -111,6 +111,11 @@ export default function VendorSignupPage() {
       <GridBackground />
       <div className="w-full max-w-md relative z-10">
         <div className="bg-black/80 backdrop-blur-xl border border-gray-800 rounded-lg p-8">
+          {/* Logo */}
+          <div className="flex justify-center mb-6">
+            <img src="/logo.png" alt="VouchFor Logo" className="h-12 w-auto" />
+          </div>
+
           <h1 className="text-3xl font-semibold text-white mb-2">
             Create Vendor Account
           </h1>

@@ -61,7 +61,7 @@ const Waitlist = () => {
 
             {/* Navigation Arrows */}
             <button
-                className="absolute left-6 top-1/2 -translate-y-1/2 w-10 h-10 rounded-lg border border-white/10 bg-white/5 backdrop-blur-sm flex items-center justify-center text-white/60 hover:text-white/90 hover:bg-white/10 transition-all duration-300"
+                className="absolute left-6 top-1/2 -translate-y-1/2 w-10 h-10 rounded-lg border border-white/10 bg-white/5 backdrop-blur-sm flex items-center justify-center text-white/60 hover:text-white/90 hover:bg-white/10 transition-all duration-300 z-20"
                 aria-label="Previous"
             >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -70,13 +70,18 @@ const Waitlist = () => {
             </button>
 
             <button
-                className="absolute right-6 top-1/2 -translate-y-1/2 w-10 h-10 rounded-lg border border-white/10 bg-white/5 backdrop-blur-sm flex items-center justify-center text-white/60 hover:text-white/90 hover:bg-white/10 transition-all duration-300"
+                className="absolute right-6 top-1/2 -translate-y-1/2 w-10 h-10 rounded-lg border border-white/10 bg-white/5 backdrop-blur-sm flex items-center justify-center text-white/60 hover:text-white/90 hover:bg-white/10 transition-all duration-300 z-20"
                 aria-label="Next"
             >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                 </svg>
             </button>
+
+            {/* Logo at Top */}
+            <div className="absolute top-8 left-1/2 -translate-x-1/2 z-20">
+                <img src="/logo.png" alt="Earniyx Logo" className="h-10 w-auto" />
+            </div>
 
             {/* Main Content */}
             <div className="relative z-10 max-w-2xl mx-auto px-6 text-center">
@@ -85,9 +90,9 @@ const Waitlist = () => {
                     className="text-5xl md:text-6xl lg:text-7xl font-bold mb-6 text-white/90"
                     style={{ fontFamily: "'Ginora Sans', sans-serif" }}
                 >
-                    Affiliate Management,
+                    Turn Your Students
                     <br />
-                    <span className="text-white/70">Simplified.</span>
+                    <span className="text-white/70">Into Your Sales Team</span>
                 </h1>
 
                 {/* Subtitle */}
@@ -95,7 +100,7 @@ const Waitlist = () => {
                     className="text-lg md:text-xl text-white/60 mb-12 max-w-xl mx-auto leading-relaxed"
                     style={{ fontFamily: "'Ginora Sans', sans-serif" }}
                 >
-                    Finally, an affiliate platform built specifically for coaches. No complex tech, just seamless tracking and happy affiliates.
+                    The simplest way for coaches to launch and manage an affiliate program. Stop relying solely on ads and start scaling with word-of-mouth.
                 </p>
 
                 {/* Form */}
