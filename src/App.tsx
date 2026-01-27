@@ -30,6 +30,7 @@ import AffiliateSecurityPage from './pages/affiliate/settings/security';
 import PartnersPage from './pages/dashboard/vendor/partners';
 import { supabase } from './lib/supabase';
 import LandingPage from './pages/LandingPage';
+import Waitlist from './pages/Waitlist';
 
 function RequireAuth({ children }: { children: JSX.Element }) {
   const [isChecking, setIsChecking] = useState(true);
@@ -99,6 +100,7 @@ function App() {
           <Routes>
             {/* Landing Page at Root */}
             <Route path="/" element={<LandingPage />} />
+            <Route path="/waitlist" element={<Waitlist />} />
 
             {/* Dashboards are protected */}
             <Route
